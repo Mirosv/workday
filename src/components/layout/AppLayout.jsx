@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { FileText, Calculator, Briefcase, DollarSign, Menu, X, TreePine, Settings, CalendarDays, LogOut, Receipt } from 'lucide-react';
+import { FileText, Calculator, Briefcase, DollarSign, Menu, X, TreePine, Settings, CalendarDays, LogOut, Receipt, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useBusiness } from '@/lib/BusinessContext';
 import { base44 } from '@/api/base44Client';
+
+const SUPER_ADMIN_EMAIL = 'valerio.miros85@gmail.com';
 
 const navItems = [
   { path: '/quotes', label: 'Quote Builder', icon: FileText },
@@ -18,8 +20,13 @@ const navItems = [
 
 export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentUserEmail, setCurrentUserEmail] = useState('');
   const location = useLocation();
   const { settings } = useBusiness();
+
+  useEffect(() => {
+    base44.auth.me().then(u => setCurrentUserEmail(u?.email || ''));
+  }, []);
 
   return (
     <div className="min-h-screen bg-background font-body">
@@ -76,6 +83,21 @@ export default function AppLayout() {
               </Link>
             );
           })}
+          {currentUserEmail === SUPER_ADMIN_EMAIL && (
+            <Link
+              to="/super-admin"
+              onClick={() => setSidebarOpen(false)}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all mt-2 border border-sidebar-border",
+                location.pathname === '/super-admin'
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-sidebar-primary/25"
+                  : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+              )}
+            >
+              <ShieldCheck className="h-4 w-4" />
+              Super Admin
+            </Link>
+          )}
         </nav>
 
         <div className="p-4 border-t border-sidebar-border space-y-3">

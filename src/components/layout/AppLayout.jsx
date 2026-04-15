@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { FileText, Calculator, Briefcase, DollarSign, Menu, X, TreePine, Settings } from 'lucide-react';
+import { FileText, Calculator, Briefcase, DollarSign, Menu, X, TreePine, Settings, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useBusiness } from '@/lib/BusinessContext';
@@ -8,8 +8,9 @@ import { useBusiness } from '@/lib/BusinessContext';
 const navItems = [
   { path: '/', label: 'Invoice Builder', icon: FileText },
   { path: '/material-converter', label: 'Material Converter', icon: Calculator },
-  { path: '/job-tracker', label: 'Job Tracker', icon: Briefcase },
+  { path: '/job-tracker', label: 'CRM Pipeline', icon: Briefcase },
   { path: '/money-tracker', label: 'Money Tracker', icon: DollarSign },
+  { path: '/booking', label: 'Booking', icon: CalendarDays },
   { path: '/settings', label: 'Configuración', icon: Settings },
 ];
 

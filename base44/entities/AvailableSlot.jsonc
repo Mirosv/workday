@@ -1,0 +1,28 @@
+{
+  "name": "AvailableSlot",
+  "type": "object",
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "time_slot": {
+      "type": "string"
+    },
+    "max_bookings": {
+      "type": "number",
+      "default": 1
+    },
+    "service_label": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "date",
+    "time_slot"
+  ]
+}

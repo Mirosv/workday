@@ -11,6 +11,8 @@ import MaterialConverter from '@/pages/MaterialConverter';
 import JobTracker from '@/pages/JobTracker';
 import MoneyTracker from '@/pages/MoneyTracker';
 import BusinessSettingsPage from '@/pages/BusinessSettings';
+import BookingAdmin from '@/pages/BookingAdmin';
+import BookingPublic from '@/pages/BookingPublic';
 import { BusinessProvider } from '@/lib/BusinessContext';
 
 const AuthenticatedApp = () => {
@@ -46,7 +48,9 @@ const AuthenticatedApp = () => {
           <Route path="/job-tracker" element={<JobTracker />} />
           <Route path="/money-tracker" element={<MoneyTracker />} />
           <Route path="/settings" element={<BusinessSettingsPage />} />
+          <Route path="/booking" element={<BookingAdmin />} />
         </Route>
+        <Route path="/booking/public" element={<BookingPublic />} />
         <Route path="*" element={<PageNotFound />} />
       </Routes>
     </BusinessProvider>

@@ -13,6 +13,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Save, Trash2, Phone, Mail, MapPin, DollarSign, Calendar, FileText, StickyNote, ClipboardList, History } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useBusiness } from '@/lib/BusinessContext';
 
 const STATUS_OPTIONS = [
   { value: 'lead', label: 'Lead', color: 'bg-purple-100 text-purple-700 border-purple-200' },
@@ -31,6 +32,7 @@ const PRIORITY_OPTIONS = [
 export default function JobModal({ job, open, onClose }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { currentUser } = useBusiness();
   const [form, setForm] = useState({ ...job });
   const u = (f, v) => setForm(p => ({ ...p, [f]: v }));
 
@@ -52,10 +54,11 @@ export default function JobModal({ job, open, onClose }) {
     },
   });
 
-  // Load all jobs for same client (history)
+  // Load jobs for same client (scoped to current user)
   const { data: allJobs = [] } = useQuery({
-    queryKey: ['jobs'],
-    queryFn: () => base44.entities.Job.list('-created_date'),
+    queryKey: ['jobs', currentUser?.email],
+    queryFn: () => currentUser ? base44.entities.Job.filter({ created_by: currentUser.email }, '-created_date') : [],
+    enabled: !!currentUser,
   });
   const clientHistory = allJobs.filter(j => j.client_name === job.client_name && j.id !== job.id);
 

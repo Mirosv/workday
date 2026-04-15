@@ -41,7 +41,7 @@ const buildDefault = (settings) => ({
 });
 
 export default function InvoiceBuilderPage() {
-  const { settings, loading } = useBusiness();
+  const { settings, loading, currentUser } = useBusiness();
   const [data, setData] = useState(() => buildDefault({}));
   const [services, setServices] = useState([]);
   const [clientMode, setClientMode] = useState(false);
@@ -50,8 +50,9 @@ export default function InvoiceBuilderPage() {
   const queryClient = useQueryClient();
 
   const { data: crmJobs = [] } = useQuery({
-    queryKey: ['jobs'],
-    queryFn: () => base44.entities.Job.list('-created_date'),
+    queryKey: ['jobs', currentUser?.email],
+    queryFn: () => currentUser ? base44.entities.Job.filter({ created_by: currentUser.email }, '-created_date') : [],
+    enabled: !!currentUser,
   });
 
   useEffect(() => {

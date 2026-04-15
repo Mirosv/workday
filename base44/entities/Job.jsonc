@@ -5,6 +5,12 @@
     "client_name": {
       "type": "string"
     },
+    "client_phone": {
+      "type": "string"
+    },
+    "client_email": {
+      "type": "string"
+    },
     "job_name": {
       "type": "string"
     },
@@ -18,13 +24,28 @@
     "status": {
       "type": "string",
       "enum": [
+        "lead",
         "estimate",
         "in_progress",
-        "paid"
+        "paid",
+        "cancelled"
       ],
-      "default": "estimate"
+      "default": "lead"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "default": "medium"
     },
     "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "follow_up_date": {
       "type": "string",
       "format": "date"
     },
@@ -32,6 +53,9 @@
       "type": "string"
     },
     "notes": {
+      "type": "string"
+    },
+    "internal_notes": {
       "type": "string"
     },
     "services": {

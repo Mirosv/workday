@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Save, Printer, Eye, TreePine } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Save, Printer, Eye, TreePine, Users, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import JobDetailsSection from '@/components/invoice/JobDetailsSection';
 import ServicesSection from '@/components/invoice/ServicesSection';
@@ -43,14 +44,51 @@ export default function InvoiceBuilder() {
   const [data, setData] = useState(() => buildDefault({}));
   const [services, setServices] = useState([]);
   const [clientMode, setClientMode] = useState(false);
+  const [linkedJobId, setLinkedJobId] = useState(null);
   const queryClient = useQueryClient();
+
+  // Load CRM jobs for selector
+  const { data: crmJobs = [] } = useQuery({
+    queryKey: ['jobs'],
+    queryFn: () => base44.entities.Job.list('-created_date'),
+  });
+
+  // Check if opened from CRM via URL param
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const jobId = params.get('job');
+    if (jobId && crmJobs.length > 0) {
+      const job = crmJobs.find(j => j.id === jobId);
+      if (job) loadFromJob(job);
+    }
+  }, [crmJobs]);
 
   // Once settings load, pre-fill with business defaults
   useEffect(() => {
     if (!loading) {
-      setData(buildDefault(settings));
+      setData(prev => ({ ...buildDefault(settings), ...prev, business_name: settings.business_name || prev.business_name, business_phone: settings.business_phone || prev.business_phone, business_address: settings.business_address || prev.business_address }));
     }
   }, [loading]);
+
+  const loadFromJob = (job) => {
+    setLinkedJobId(job.id);
+    setData(prev => ({
+      ...prev,
+      client_name: job.client_name || '',
+      client_phone: job.client_phone || '',
+      client_email: job.client_email || '',
+      job_address: job.job_address || '',
+      notes: job.notes || '',
+      invoice_number: job.invoice_number || `QT-${Date.now().toString().slice(-4)}`,
+    }));
+    if (job.services?.length) setServices(job.services);
+    toast.success(`Cliente cargado: ${job.client_name}`);
+  };
+
+  const handleLoadFromCRM = (jobId) => {
+    const job = crmJobs.find(j => j.id === jobId);
+    if (job) loadFromJob(job);
+  };
 
   const totals = useMemo(() => {
     const servicesSubtotal = services.reduce((s, svc) => s + (svc.line_total || 0), 0);
@@ -68,17 +106,25 @@ export default function InvoiceBuilder() {
   }, [services, data]);
 
   const saveJob = useMutation({
-    mutationFn: () => base44.entities.Job.create({
-      ...data,
-      services,
-      grand_total: totals.grandTotal,
-      total_price: totals.grandTotal,
-      job_name: `${data.invoice_number} - ${data.client_name}`,
-      status: 'estimate',
-    }),
-    onSuccess: () => {
+    mutationFn: async () => {
+      const payload = {
+        ...data,
+        services,
+        grand_total: totals.grandTotal,
+        total_price: totals.grandTotal,
+        job_name: data.job_name || `${data.invoice_number} - ${data.client_name}`,
+        status: 'estimate',
+      };
+      if (linkedJobId) {
+        return base44.entities.Job.update(linkedJobId, payload);
+      } else {
+        return base44.entities.Job.create(payload);
+      }
+    },
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
-      toast.success('Quote saved as estimate!');
+      if (!linkedJobId) setLinkedJobId(result.id);
+      toast.success(linkedJobId ? 'Quote actualizado en CRM!' : 'Quote guardado en CRM!');
     },
   });
 
@@ -95,7 +141,7 @@ export default function InvoiceBuilder() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">Labor + Add-ons + Overhead + Profit</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap justify-end">
           <Button variant="outline" size="sm" onClick={() => setClientMode(!clientMode)}>
             <Eye className="h-4 w-4 mr-1" /> {clientMode ? 'Edit Mode' : 'Client Mode'}
           </Button>
@@ -103,10 +149,43 @@ export default function InvoiceBuilder() {
             <Printer className="h-4 w-4 mr-1" /> Print
           </Button>
           <Button size="sm" onClick={() => saveJob.mutate()} disabled={saveJob.isPending || !data.client_name}>
-            <Save className="h-4 w-4 mr-1" /> Save
+            <Save className="h-4 w-4 mr-1" /> {linkedJobId ? 'Actualizar CRM' : 'Guardar en CRM'}
           </Button>
         </div>
       </div>
+
+      {/* CRM Link Banner */}
+      <Card className={`border-2 ${linkedJobId ? 'border-primary/40 bg-primary/5' : 'border-dashed border-border'}`}>
+        <CardContent className="p-3 flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex items-center gap-2 flex-1">
+            <Users className="h-4 w-4 text-primary shrink-0" />
+            <span className="text-sm font-medium text-muted-foreground">
+              {linkedJobId
+                ? `✓ Vinculado con CRM: ${data.client_name}`
+                : 'Cargar cliente desde CRM Pipeline'}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Select onValueChange={handleLoadFromCRM} value={linkedJobId || ''}>
+              <SelectTrigger className="h-8 text-xs w-52">
+                <SelectValue placeholder="Seleccionar cliente del CRM..." />
+              </SelectTrigger>
+              <SelectContent>
+                {crmJobs.map(job => (
+                  <SelectItem key={job.id} value={job.id}>
+                    {job.client_name} — {job.job_name?.slice(0, 20)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {linkedJobId && (
+              <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground" onClick={() => { setLinkedJobId(null); setData(buildDefault(settings)); setServices([]); }}>
+                Limpiar
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {clientMode ? (
         <ClientView data={data} services={services} totals={totals} />

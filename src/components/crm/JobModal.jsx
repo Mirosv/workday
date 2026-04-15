@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Save, Trash2, Phone, Mail, MapPin, DollarSign, Calendar, FileText, StickyNote } from 'lucide-react';
+import { Save, Trash2, Phone, Mail, MapPin, DollarSign, Calendar, FileText, StickyNote, ClipboardList } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 const STATUS_OPTIONS = [
@@ -29,6 +30,7 @@ const PRIORITY_OPTIONS = [
 
 export default function JobModal({ job, open, onClose }) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [form, setForm] = useState({ ...job });
   const u = (f, v) => setForm(p => ({ ...p, [f]: v }));
 
@@ -150,11 +152,14 @@ export default function JobModal({ job, open, onClose }) {
 
         <Separator />
 
-        <div className="flex justify-between gap-2">
+        <div className="flex justify-between gap-2 flex-wrap">
           <Button variant="ghost" size="sm" className="text-destructive" onClick={() => deleteJob.mutate()} disabled={deleteJob.isPending}>
             <Trash2 className="h-4 w-4 mr-1" /> Eliminar
           </Button>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" size="sm" onClick={() => { onClose(); navigate(`/?job=${job.id}`); }}>
+              <ClipboardList className="h-4 w-4 mr-1" /> Crear Quote
+            </Button>
             <Button variant="outline" size="sm" onClick={onClose}>Cancelar</Button>
             <Button size="sm" onClick={() => updateJob.mutate(form)} disabled={updateJob.isPending}>
               <Save className="h-4 w-4 mr-1" /> Guardar

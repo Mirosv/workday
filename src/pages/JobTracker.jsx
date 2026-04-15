@@ -12,8 +12,10 @@ import KanbanBoard from '@/components/crm/KanbanBoard';
 import ListView from '@/components/crm/ListView';
 import JobModal from '@/components/crm/JobModal';
 import AddJobModal from '@/components/crm/AddJobModal';
+import { useBusiness } from '@/lib/BusinessContext';
 
 export default function JobTracker() {
+  const { tr } = useBusiness();
   const queryClient = useQueryClient();
   const [view, setView] = useState('kanban');
   const [search, setSearch] = useState('');
@@ -24,7 +26,10 @@ export default function JobTracker() {
 
   const { data: jobs = [], isLoading } = useQuery({
     queryKey: ['jobs'],
-    queryFn: () => base44.entities.Job.list('-created_date'),
+    queryFn: async () => {
+      const user = await base44.auth.me();
+      return base44.entities.Job.filter({ created_by: user.email }, '-created_date');
+    },
   });
 
   const createJob = useMutation({
@@ -71,23 +76,23 @@ export default function JobTracker() {
           <p className="text-sm text-muted-foreground mt-0.5">Gestiona clientes y trabajos como en Monday</p>
         </div>
         <Button onClick={() => setAddOpen(true)}>
-          <Plus className="h-4 w-4 mr-1" /> Nuevo cliente
+          <Plus className="h-4 w-4 mr-1" /> {tr('newClient')}
         </Button>
       </div>
 
       {/* Stats row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatPill label="Total clientes" value={stats.count} />
-        <StatPill label="Pipeline total" value={`$${stats.total.toLocaleString()}`} />
-        <StatPill label="Cobrado" value={`$${stats.paidTotal.toLocaleString()}`} green />
-        <StatPill label="Follow-ups vencidos" value={stats.followUpDue} orange={stats.followUpDue > 0} icon={stats.followUpDue > 0 ? AlertCircle : null} />
+        <StatPill label={tr('totalClients')} value={stats.count} />
+        <StatPill label={tr('pipelineTotal')} value={`$${stats.total.toLocaleString()}`} />
+        <StatPill label={tr('collected')} value={`$${stats.paidTotal.toLocaleString()}`} green />
+        <StatPill label={tr('followUpsDue')} value={stats.followUpDue} orange={stats.followUpDue > 0} icon={stats.followUpDue > 0 ? AlertCircle : null} />
       </div>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2 items-center">
         <div className="relative flex-1 min-w-44">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar cliente, trabajo..." className="pl-8 h-9" />
+          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={tr('searchPlaceholder')} className="pl-8 h-9" />
         </div>
         <Select value={filterStatus} onValueChange={setFilterStatus}>
           <SelectTrigger className="w-36 h-9"><SelectValue placeholder="Estado" /></SelectTrigger>
@@ -122,7 +127,7 @@ export default function JobTracker() {
         <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground text-sm">
-          No hay resultados. <button onClick={() => setAddOpen(true)} className="text-primary underline">Agrega un cliente</button>.
+        {tr('noResults')} <button onClick={() => setAddOpen(true)} className="text-primary underline">{tr('addClient')}</button>.
         </div>
       ) : view === 'kanban' ? (
         <KanbanBoard

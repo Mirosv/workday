@@ -11,7 +11,7 @@ import { Settings, Building2, Phone, MapPin, DollarSign, TrendingUp, Save, Loade
 import { toast } from 'sonner';
 
 export default function BusinessSettings() {
-  const { settings, saveSettings, loading } = useBusiness();
+  const { settings, saveSettings, loading, tr } = useBusiness();
   const [form, setForm] = useState(settings);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -30,14 +30,14 @@ export default function BusinessSettings() {
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
     update('logo_url', file_url);
     setUploadingLogo(false);
-    toast.success('Logo cargado');
+    toast.success(tr('logoUploaded'));
   };
 
   const handleSave = async () => {
     setSaving(true);
     await saveSettings(form);
     setSaving(false);
-    toast.success('Configuración guardada');
+    toast.success(tr('settingsSaved'));
   };
 
   if (loading) {
@@ -53,10 +53,10 @@ export default function BusinessSettings() {
       <div>
         <h1 className="font-heading font-bold text-2xl md:text-3xl flex items-center gap-2">
           <Settings className="h-7 w-7 text-primary" />
-          Configuración del Negocio
+          {tr('settingsTitle')}
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Estos datos se usan en todos los presupuestos e invoices automáticamente.
+          {tr('settingsDesc')}
         </p>
       </div>
 
@@ -64,13 +64,13 @@ export default function BusinessSettings() {
       <Card>
         <CardContent className="p-5 space-y-4">
           <h2 className="font-heading font-semibold text-base flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-primary" /> Información del Negocio
+            <Building2 className="h-4 w-4 text-primary" /> {tr('businessInfo')}
           </h2>
 
           {/* Logo upload */}
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
-              <ImagePlus className="h-3 w-3" /> Logo del negocio
+              <ImagePlus className="h-3 w-3" /> {tr('businessLogo')}
             </Label>
             <div className="flex items-center gap-4">
               <div className="h-20 w-20 rounded-xl border-2 border-dashed border-border bg-muted/40 flex items-center justify-center overflow-hidden shrink-0">
@@ -89,7 +89,7 @@ export default function BusinessSettings() {
                   disabled={uploadingLogo}
                 >
                   {uploadingLogo ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ImagePlus className="h-4 w-4 mr-2" />}
-                  {uploadingLogo ? 'Subiendo...' : 'Subir logo'}
+                  {uploadingLogo ? tr('uploading') : tr('uploadLogo')}
                 </Button>
                 {form.logo_url && (
                   <Button
@@ -99,10 +99,10 @@ export default function BusinessSettings() {
                     className="text-destructive h-7 px-2 text-xs"
                     onClick={() => update('logo_url', '')}
                   >
-                    <X className="h-3 w-3 mr-1" /> Quitar logo
+                    <X className="h-3 w-3 mr-1" /> {tr('removeLogo')}
                   </Button>
                 )}
-                <p className="text-xs text-muted-foreground">PNG, JPG. Recomendado: 200×200px</p>
+                <p className="text-xs text-muted-foreground">{tr('logoHint')}</p>
               </div>
             </div>
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
@@ -113,7 +113,7 @@ export default function BusinessSettings() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5 sm:col-span-2">
               <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <Building2 className="h-3 w-3" /> Nombre del negocio
+                <Building2 className="h-3 w-3" /> {tr('businessName')}
               </Label>
               <Input
                 value={form.business_name}
@@ -124,7 +124,7 @@ export default function BusinessSettings() {
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <Phone className="h-3 w-3" /> Teléfono
+                <Phone className="h-3 w-3" /> {tr('phone')}
               </Label>
               <Input
                 value={form.business_phone}
@@ -134,7 +134,7 @@ export default function BusinessSettings() {
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <MapPin className="h-3 w-3" /> Dirección / ZIP
+                <MapPin className="h-3 w-3" /> {tr('address')}
               </Label>
               <Input
                 value={form.business_address}
@@ -149,7 +149,7 @@ export default function BusinessSettings() {
           {/* Language */}
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
-              <Globe className="h-3 w-3" /> Idioma de la app
+              <Globe className="h-3 w-3" /> {tr('appLanguage')}
             </Label>
             <Select value={form.language || 'en'} onValueChange={v => update('language', v)}>
               <SelectTrigger className="w-48">
@@ -165,16 +165,16 @@ export default function BusinessSettings() {
           <Separator />
 
           <h2 className="font-heading font-semibold text-base flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-primary" /> Valores por Defecto (Invoices)
+            <DollarSign className="h-4 w-4 text-primary" /> {tr('defaults')}
           </h2>
           <p className="text-xs text-muted-foreground -mt-2">
-            Estos valores se pre-llenan automáticamente cada vez que creas un nuevo presupuesto.
+            {tr('defaultsDesc')}
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <DollarSign className="h-3 w-3" /> Labor por hora ($)
+                <DollarSign className="h-3 w-3" /> {tr('laborPerHour')}
               </Label>
               <Input
                 type="number"
@@ -185,7 +185,7 @@ export default function BusinessSettings() {
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <TrendingUp className="h-3 w-3" /> Overhead por defecto (%)
+                <TrendingUp className="h-3 w-3" /> {tr('defaultOverhead')}
               </Label>
               <Input
                 type="number"
@@ -196,7 +196,7 @@ export default function BusinessSettings() {
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <TrendingUp className="h-3 w-3" /> Profit por defecto (%)
+                <TrendingUp className="h-3 w-3" /> {tr('defaultProfit')}
               </Label>
               <Input
                 type="number"
@@ -212,7 +212,7 @@ export default function BusinessSettings() {
       {/* Preview */}
       <Card className="border-dashed">
         <CardContent className="p-5 space-y-2">
-          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Vista previa en invoice</p>
+          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{tr('invoicePreview')}</p>
           <div className="flex items-start gap-4">
             <div className="h-14 w-14 rounded-xl bg-primary/10 flex items-center justify-center overflow-hidden shrink-0">
               {form.logo_url ? (
@@ -233,7 +233,7 @@ export default function BusinessSettings() {
 
       <Button onClick={handleSave} disabled={saving} size="lg" className="w-full sm:w-auto">
         {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-        Guardar Configuración
+        {tr('saveSettings')}
       </Button>
     </div>
   );

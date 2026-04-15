@@ -8,21 +8,21 @@ import { base44 } from '@/api/base44Client';
 
 const SUPER_ADMIN_EMAIL = 'valerio.miros85@gmail.com';
 
-const navItems = [
-  { path: '/quotes', label: 'Quote Builder', icon: FileText },
-  { path: '/invoices', label: 'Invoice Builder', icon: Receipt },
-  { path: '/material-converter', label: 'Material Converter', icon: Calculator },
-  { path: '/job-tracker', label: 'CRM Pipeline', icon: Briefcase },
-  { path: '/money-tracker', label: 'Money Tracker', icon: DollarSign },
-  { path: '/booking', label: 'Booking', icon: CalendarDays },
-  { path: '/settings', label: 'Configuración', icon: Settings },
-];
-
 export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentUserEmail, setCurrentUserEmail] = useState('');
   const location = useLocation();
-  const { settings } = useBusiness();
+  const { settings, tr } = useBusiness();
+
+  const navItems = [
+    { path: '/quotes', label: tr('quoteBuilder'), icon: FileText },
+    { path: '/invoices', label: tr('invoiceBuilder'), icon: Receipt },
+    { path: '/material-converter', label: tr('materialConverter'), icon: Calculator },
+    { path: '/job-tracker', label: tr('crmPipeline'), icon: Briefcase },
+    { path: '/money-tracker', label: tr('moneyTracker'), icon: DollarSign },
+    { path: '/booking', label: tr('booking'), icon: CalendarDays },
+    { path: '/settings', label: tr('settings'), icon: Settings },
+  ];
 
   useEffect(() => {
     base44.auth.me().then(u => setCurrentUserEmail(u?.email || ''));
@@ -58,7 +58,7 @@ export default function AppLayout() {
             </div>
             <div>
               <h1 className="font-heading font-bold text-sidebar-foreground text-lg leading-tight">{settings.business_name}</h1>
-              <p className="text-xs text-sidebar-foreground/60">{settings.business_phone || 'Configure tu negocio'}</p>
+              <p className="text-xs text-sidebar-foreground/60">{settings.business_phone || tr('configureBusiness')}</p>
             </div>
           </div>
         </div>
@@ -108,7 +108,7 @@ export default function AppLayout() {
             className="w-full text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent"
             onClick={() => base44.auth.logout()}
           >
-            <LogOut className="h-4 w-4 mr-2" /> Cerrar sesión
+            <LogOut className="h-4 w-4 mr-2" /> {tr('logout')}
           </Button>
         </div>
       </aside>

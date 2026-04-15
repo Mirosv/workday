@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useBusiness } from '@/lib/BusinessContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,17 +20,24 @@ function isThisMonth(dateStr) {
 }
 
 export default function MoneyTracker() {
+  const { tr } = useBusiness();
   const queryClient = useQueryClient();
   const [form, setForm] = useState({ name: '', amount: 0, date: today });
 
   const { data: expenses = [], isLoading: loadingExpenses } = useQuery({
     queryKey: ['expenses'],
-    queryFn: () => base44.entities.Expense.list('-created_date'),
+    queryFn: async () => {
+      const user = await base44.auth.me();
+      return base44.entities.Expense.filter({ created_by: user.email }, '-created_date');
+    },
   });
 
   const { data: jobs = [], isLoading: loadingJobs } = useQuery({
     queryKey: ['jobs'],
-    queryFn: () => base44.entities.Job.list('-created_date'),
+    queryFn: async () => {
+      const user = await base44.auth.me();
+      return base44.entities.Job.filter({ created_by: user.email }, '-created_date');
+    },
   });
 
   const createExpense = useMutation({
@@ -37,7 +45,7 @@ export default function MoneyTracker() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
       setForm({ name: '', amount: 0, date: today });
-      toast.success('Expense saved!');
+      toast.success(tr('expenseSaved'));
     },
   });
 
@@ -45,7 +53,7 @@ export default function MoneyTracker() {
     mutationFn: (id) => base44.entities.Expense.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
-      toast.success('Expense deleted');
+      toast.success(tr('expenseDeleted'));
     },
   });
 
@@ -64,16 +72,16 @@ export default function MoneyTracker() {
       <div>
         <h1 className="font-heading font-bold text-2xl md:text-3xl flex items-center gap-2">
           <DollarSign className="h-7 w-7 text-primary" />
-          Simple Money Tracker
+          {tr('moneyTrackerTitle')}
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">Track paid income and manual expenses for this month.</p>
+        <p className="text-sm text-muted-foreground mt-1">{tr('moneyTrackerDesc')}</p>
       </div>
 
       {/* Stats cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <StatCard label="Income This Month" value={stats.income} icon={TrendingUp} positive />
-        <StatCard label="Expenses This Month" value={stats.totalExpenses} icon={TrendingDown} />
-        <StatCard label="Profit This Month" value={stats.profit} icon={DollarSign} positive={stats.profit >= 0} highlight />
+        <StatCard label={tr('incomeMonth')} value={stats.income} icon={TrendingUp} positive />
+        <StatCard label={tr('expensesMonth')} value={stats.totalExpenses} icon={TrendingDown} />
+        <StatCard label={tr('profitMonth')} value={stats.profit} icon={DollarSign} positive={stats.profit >= 0} highlight />
       </div>
 
       {/* Add expense form */}
@@ -81,36 +89,36 @@ export default function MoneyTracker() {
         <CardContent className="p-5 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Expense Name</Label>
+              <Label className="text-xs text-muted-foreground">{tr('expenseName')}</Label>
               <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Gas, mulch, tool repair..." />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Amount</Label>
+              <Label className="text-xs text-muted-foreground">{tr('amount')}</Label>
               <Input type="number" value={form.amount || ''} onChange={e => setForm({ ...form, amount: parseFloat(e.target.value) || 0 })} placeholder="0.00" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Date</Label>
+              <Label className="text-xs text-muted-foreground">{tr('date')}</Label>
               <Input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} />
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">Income comes from jobs marked Paid. Expenses are manual entries like gas, materials, and tools.</p>
+          <p className="text-xs text-muted-foreground">{tr('onlyThisMonth')}</p>
           <Button onClick={() => createExpense.mutate(form)} disabled={createExpense.isPending || !form.name}>
-            <Plus className="h-4 w-4 mr-1" /> Add Expense
+            <Plus className="h-4 w-4 mr-1" /> {tr('addExpense')}
           </Button>
         </CardContent>
       </Card>
 
       {/* Saved expenses */}
       <div>
-        <h2 className="font-heading font-semibold text-lg mb-3">Saved Expenses</h2>
-        <p className="text-xs text-muted-foreground mb-4">Only this month counts in the totals above.</p>
+        <h2 className="font-heading font-semibold text-lg mb-3">{tr('savedExpenses')}</h2>
+        <p className="text-xs text-muted-foreground mb-4">{tr('onlyThisMonth')}</p>
 
         {isLoading ? (
           <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
         ) : expenses.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center text-muted-foreground text-sm">
-              No expenses saved yet.
+              {tr('noExpenses')}
             </CardContent>
           </Card>
         ) : (

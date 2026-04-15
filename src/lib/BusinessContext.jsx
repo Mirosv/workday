@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import { t } from '@/lib/i18n';
 
 const BusinessContext = createContext(null);
 
@@ -45,8 +46,11 @@ export function BusinessProvider({ children }) {
     }
   };
 
+  const lang = settings.language || 'en';
+  const tr = (key) => t(lang, key);
+
   return (
-    <BusinessContext.Provider value={{ settings, saveSettings, loading, currentUser }}>
+    <BusinessContext.Provider value={{ settings, saveSettings, loading, currentUser, lang, tr }}>
       {children}
     </BusinessContext.Provider>
   );

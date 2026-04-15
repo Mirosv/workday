@@ -4,8 +4,9 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import CRMSearch from '@/components/invoice/CRMSearch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Save, Printer, Eye, TreePine, Users, ArrowRight } from 'lucide-react';
+import { Save, Printer, Eye, TreePine, Copy, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import JobDetailsSection from '@/components/invoice/JobDetailsSection';
 import ServicesSection from '@/components/invoice/ServicesSection';
@@ -130,6 +131,15 @@ export default function InvoiceBuilder() {
 
   const handlePrint = () => window.print();
 
+  const handleDuplicate = () => {
+    setLinkedJobId(null);
+    setData(prev => ({
+      ...prev,
+      invoice_number: `QT-${Date.now().toString().slice(-4)}`,
+    }));
+    toast.success('Cotización duplicada — edita y guarda como nueva.');
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -148,42 +158,32 @@ export default function InvoiceBuilder() {
           <Button variant="outline" size="sm" onClick={handlePrint}>
             <Printer className="h-4 w-4 mr-1" /> Print
           </Button>
+          {data.client_name && (
+            <Button variant="outline" size="sm" onClick={handleDuplicate}>
+              <Copy className="h-4 w-4 mr-1" /> Duplicar
+            </Button>
+          )}
           <Button size="sm" onClick={() => saveJob.mutate()} disabled={saveJob.isPending || !data.client_name}>
             <Save className="h-4 w-4 mr-1" /> {linkedJobId ? 'Actualizar CRM' : 'Guardar en CRM'}
           </Button>
         </div>
       </div>
 
-      {/* CRM Link Banner */}
-      <Card className={`border-2 ${linkedJobId ? 'border-primary/40 bg-primary/5' : 'border-dashed border-border'}`}>
-        <CardContent className="p-3 flex flex-col sm:flex-row sm:items-center gap-3">
-          <div className="flex items-center gap-2 flex-1">
-            <Users className="h-4 w-4 text-primary shrink-0" />
-            <span className="text-sm font-medium text-muted-foreground">
-              {linkedJobId
-                ? `✓ Vinculado con CRM: ${data.client_name}`
-                : 'Cargar cliente desde CRM Pipeline'}
-            </span>
+      {/* CRM Search */}
+      <Card className="border border-border">
+        <CardContent className="p-3 space-y-2">
+          <div className="flex items-center gap-2 mb-1">
+            <Users className="h-4 w-4 text-primary" />
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">CRM Pipeline</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Select onValueChange={handleLoadFromCRM} value={linkedJobId || ''}>
-              <SelectTrigger className="h-8 text-xs w-52">
-                <SelectValue placeholder="Seleccionar cliente del CRM..." />
-              </SelectTrigger>
-              <SelectContent>
-                {crmJobs.map(job => (
-                  <SelectItem key={job.id} value={job.id}>
-                    {job.client_name} — {job.job_name?.slice(0, 20)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {linkedJobId && (
-              <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground" onClick={() => { setLinkedJobId(null); setData(buildDefault(settings)); setServices([]); }}>
-                Limpiar
-              </Button>
-            )}
-          </div>
+          <CRMSearch
+            jobs={crmJobs}
+            linkedJob={linkedJobId ? crmJobs.find(j => j.id === linkedJobId) : null}
+            onSelect={(job) => {
+              if (!job) { setLinkedJobId(null); setData(buildDefault(settings)); setServices([]); }
+              else handleLoadFromCRM(job.id);
+            }}
+          />
         </CardContent>
       </Card>
 

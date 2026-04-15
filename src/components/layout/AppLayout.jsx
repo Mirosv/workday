@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { FileText, Calculator, Briefcase, DollarSign, Menu, X, TreePine, Settings, CalendarDays } from 'lucide-react';
+import { FileText, Calculator, Briefcase, DollarSign, Menu, X, TreePine, Settings, CalendarDays, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useBusiness } from '@/lib/BusinessContext';
+import { base44 } from '@/api/base44Client';
 
 const navItems = [
   { path: '/', label: 'Invoice Builder', icon: FileText },
@@ -76,8 +77,16 @@ export default function AppLayout() {
           })}
         </nav>
 
-        <div className="p-4 border-t border-sidebar-border">
+        <div className="p-4 border-t border-sidebar-border space-y-3">
           <p className="text-xs text-sidebar-foreground/40 text-center">{settings.business_address || ''}</p>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+            onClick={() => base44.auth.logout()}
+          >
+            <LogOut className="h-4 w-4 mr-2" /> Cerrar sesión
+          </Button>
         </div>
       </aside>
 

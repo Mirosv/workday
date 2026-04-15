@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Save, Trash2, Phone, Mail, MapPin, DollarSign, Calendar, FileText, StickyNote, ClipboardList } from 'lucide-react';
+import { Save, Trash2, Phone, Mail, MapPin, DollarSign, Calendar, FileText, StickyNote, ClipboardList, History } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -52,6 +52,13 @@ export default function JobModal({ job, open, onClose }) {
     },
   });
 
+  // Load all jobs for same client (history)
+  const { data: allJobs = [] } = useQuery({
+    queryKey: ['jobs'],
+    queryFn: () => base44.entities.Job.list('-created_date'),
+  });
+  const clientHistory = allJobs.filter(j => j.client_name === job.client_name && j.id !== job.id);
+
   const statusCfg = STATUS_OPTIONS.find(s => s.value === form.status) || STATUS_OPTIONS[0];
   const priorityCfg = PRIORITY_OPTIONS.find(p => p.value === form.priority) || PRIORITY_OPTIONS[1];
 
@@ -69,10 +76,15 @@ export default function JobModal({ job, open, onClose }) {
         </DialogHeader>
 
         <Tabs defaultValue="info">
-          <TabsList className="grid grid-cols-3 w-full">
+          <TabsList className="grid grid-cols-4 w-full">
             <TabsTrigger value="info">Info</TabsTrigger>
             <TabsTrigger value="job">Job</TabsTrigger>
             <TabsTrigger value="notes">Notas</TabsTrigger>
+            <TabsTrigger value="history" className="flex items-center gap-1">
+              <History className="h-3 w-3" />
+              {clientHistory.length > 0 && <span className="bg-primary text-primary-foreground rounded-full text-[10px] w-4 h-4 flex items-center justify-center">{clientHistory.length}</span>}
+              Historial
+            </TabsTrigger>
           </TabsList>
 
           {/* INFO TAB */}
@@ -110,7 +122,7 @@ export default function JobModal({ job, open, onClose }) {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground flex items-center gap-1"><DollarSign className="h-3 w-3" /> Precio total</Label>
-                <Input type="number" value={form.total_price || ''} onChange={e => u('total_price', parseFloat(e.target.value) || 0)} />
+                <Input type="number" inputMode="decimal" pattern="[0-9]*" value={form.total_price || ''} onChange={e => u('total_price', parseFloat(e.target.value) || 0)} />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Estado</Label>
@@ -147,6 +159,35 @@ export default function JobModal({ job, open, onClose }) {
               <Label className="text-xs text-muted-foreground flex items-center gap-1"><StickyNote className="h-3 w-3" /> Notas internas</Label>
               <Textarea value={form.internal_notes || ''} onChange={e => u('internal_notes', e.target.value)} placeholder="Observaciones privadas del equipo..." rows={3} />
             </div>
+          </TabsContent>
+
+          {/* HISTORY TAB */}
+          <TabsContent value="history" className="mt-4">
+            {clientHistory.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">No hay historial previo para este cliente.</p>
+            ) : (
+              <div className="space-y-2">
+                {clientHistory.map(h => {
+                  const s = STATUS_OPTIONS.find(s => s.value === h.status) || STATUS_OPTIONS[0];
+                  return (
+                    <div key={h.id} className="flex items-center justify-between gap-2 rounded-lg border border-border p-3 bg-card">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{h.job_name || h.invoice_number || '—'}</p>
+                        <p className="text-xs text-muted-foreground">{h.date || h.created_date?.split('T')[0]}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${s.color}`}>{s.label}</span>
+                        <span className="text-sm font-bold text-primary">${(h.grand_total || h.total_price || 0).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+                <div className="flex justify-between items-center pt-1 text-xs text-muted-foreground font-medium border-t border-border mt-2 pt-2">
+                  <span>Total histórico ({clientHistory.length} trabajos)</span>
+                  <span className="text-foreground font-bold">${clientHistory.reduce((s, h) => s + (h.grand_total || h.total_price || 0), 0).toLocaleString()}</span>
+                </div>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
 

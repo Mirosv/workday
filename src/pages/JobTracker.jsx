@@ -44,7 +44,7 @@ export default function JobTracker() {
   const filtered = useMemo(() => {
     return jobs.filter(j => {
       const q = search.toLowerCase();
-      const matchSearch = !q || j.client_name?.toLowerCase().includes(q) || j.job_name?.toLowerCase().includes(q) || j.job_address?.toLowerCase().includes(q) || j.client_phone?.includes(q);
+      const matchSearch = !q || j.client_name?.toLowerCase().includes(q) || j.job_name?.toLowerCase().includes(q) || j.job_address?.toLowerCase().includes(q) || j.client_phone?.includes(q) || j.client_email?.toLowerCase().includes(q);
       const matchStatus = filterStatus === 'all' || j.status === filterStatus;
       const matchPriority = filterPriority === 'all' || j.priority === filterPriority;
       return matchSearch && matchStatus && matchPriority;

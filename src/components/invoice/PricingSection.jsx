@@ -20,6 +20,8 @@ export default function PricingSection({ data, onChange, totals }) {
       {data[toggleKey] && (
         <Input
           type="number"
+          inputMode="decimal"
+          pattern="[0-9]*"
           value={data[amountKey]}
           onChange={e => update(amountKey, parseFloat(e.target.value) || 0)}
           className="w-24 h-8 text-xs text-right"
@@ -41,27 +43,27 @@ export default function PricingSection({ data, onChange, totals }) {
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">Labor $/hr</Label>
-          <Input type="number" value={data.labor_rate} onChange={e => update('labor_rate', parseFloat(e.target.value) || 0)} className="h-9" />
+          <Input inputMode="decimal" pattern="[0-9]*" type="number" value={data.labor_rate} onChange={e => update('labor_rate', parseFloat(e.target.value) || 0)} className="h-9" />
         </div>
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">Labor hours</Label>
-          <Input type="number" value={data.labor_hours} onChange={e => update('labor_hours', parseFloat(e.target.value) || 0)} className="h-9" />
+          <Input inputMode="decimal" pattern="[0-9]*" type="number" value={data.labor_hours} onChange={e => update('labor_hours', parseFloat(e.target.value) || 0)} className="h-9" />
         </div>
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">Overhead %</Label>
-          <Input type="number" value={data.overhead_pct} onChange={e => update('overhead_pct', parseFloat(e.target.value) || 0)} className="h-9" />
+          <Input inputMode="decimal" pattern="[0-9]*" type="number" value={data.overhead_pct} onChange={e => update('overhead_pct', parseFloat(e.target.value) || 0)} className="h-9" />
         </div>
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">Profit %</Label>
-          <Input type="number" value={data.profit_pct} onChange={e => update('profit_pct', parseFloat(e.target.value) || 0)} className="h-9" />
+          <Input inputMode="decimal" pattern="[0-9]*" type="number" value={data.profit_pct} onChange={e => update('profit_pct', parseFloat(e.target.value) || 0)} className="h-9" />
         </div>
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">Min job fee $</Label>
-          <Input type="number" value={data.minimum_fee} onChange={e => update('minimum_fee', parseFloat(e.target.value) || 0)} className="h-9" />
+          <Input inputMode="decimal" pattern="[0-9]*" type="number" value={data.minimum_fee} onChange={e => update('minimum_fee', parseFloat(e.target.value) || 0)} className="h-9" />
         </div>
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">Discount $</Label>
-          <Input type="number" value={data.discount} onChange={e => update('discount', parseFloat(e.target.value) || 0)} className="h-9" />
+          <Input inputMode="decimal" pattern="[0-9]*" type="number" value={data.discount} onChange={e => update('discount', parseFloat(e.target.value) || 0)} className="h-9" />
         </div>
       </div>
 

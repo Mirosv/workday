@@ -4,8 +4,8 @@ import Stripe from 'npm:stripe@14.21.0';
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
 
 const PRICE_IDS = {
-  pro: Deno.env.get('STRIPE_PRICE_PRO') || 'price_pro_placeholder',
-  premium: Deno.env.get('STRIPE_PRICE_PREMIUM') || 'price_premium_placeholder',
+  pro: Deno.env.get('STRIPE_PRICE_PRO'),
+  premium: Deno.env.get('STRIPE_PRICE_PREMIUM'),
 };
 
 Deno.serve(async (req) => {
@@ -15,8 +15,8 @@ Deno.serve(async (req) => {
 
   const { plan, success_url, cancel_url } = await req.json();
 
-  if (!PRICE_IDS[plan]) {
-    return Response.json({ error: 'Invalid plan' }, { status: 400 });
+  if (!plan || !PRICE_IDS[plan]) {
+    return Response.json({ error: `Plan inválido o Price ID no configurado para: ${plan}` }, { status: 400 });
   }
 
   const session = await stripe.checkout.sessions.create({

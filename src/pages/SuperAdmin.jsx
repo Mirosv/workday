@@ -8,9 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Loader2, Building2, Phone, MapPin, Globe, Users, ShieldCheck,
-  Edit2, Trash2, PauseCircle, PlayCircle, Crown, Zap, Star, Settings2
+  Edit2, Trash2, PauseCircle, PlayCircle, Crown, Zap, Star, Settings2, KeyRound, Save, Eye, EyeOff
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -163,6 +164,7 @@ export default function SuperAdmin() {
         <TabsList>
           <TabsTrigger value="companies">Empresas ({companies.length})</TabsTrigger>
           <TabsTrigger value="plans">Planes de Acceso</TabsTrigger>
+          <TabsTrigger value="stripe">⚙️ Stripe Config</TabsTrigger>
         </TabsList>
 
         {/* COMPANIES TAB */}
@@ -280,6 +282,10 @@ export default function SuperAdmin() {
             </CardContent>
           </Card>
         </TabsContent>
+        {/* STRIPE CONFIG TAB */}
+        <TabsContent value="stripe" className="mt-4">
+          <StripeConfigPanel />
+        </TabsContent>
       </Tabs>
 
       {/* Edit Dialog */}
@@ -367,6 +373,96 @@ export default function SuperAdmin() {
         </Dialog>
       )}
     </div>
+  );
+}
+
+function StripeConfigPanel() {
+  const [fields, setFields] = useState({
+    STRIPE_SECRET_KEY: '',
+    STRIPE_WEBHOOK_SECRET: '',
+    STRIPE_PRICE_PRO: '',
+    STRIPE_PRICE_PREMIUM: '',
+  });
+  const [show, setShow] = useState({});
+  const [saving, setSaving] = useState(false);
+
+  const LABELS = {
+    STRIPE_SECRET_KEY: 'Stripe Secret Key (sk_...)',
+    STRIPE_WEBHOOK_SECRET: 'Webhook Secret (whsec_...)',
+    STRIPE_PRICE_PRO: 'Price ID — Plan Pro (price_...)',
+    STRIPE_PRICE_PREMIUM: 'Price ID — Plan Premium (price_...)',
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    const toSave = Object.entries(fields).filter(([, v]) => v.trim() !== '');
+    if (toSave.length === 0) {
+      toast.error('Ingresa al menos un valor para guardar.');
+      setSaving(false);
+      return;
+    }
+    try {
+      await Promise.all(
+        toSave.map(([key, value]) =>
+          base44.functions.invoke('saveStripeSecret', { key, value })
+        )
+      );
+      toast.success('Configuración guardada. Los campos en blanco no se modificaron.');
+      setFields({ STRIPE_SECRET_KEY: '', STRIPE_WEBHOOK_SECRET: '', STRIPE_PRICE_PRO: '', STRIPE_PRICE_PREMIUM: '' });
+    } catch (err) {
+      toast.error('Error al guardar: ' + (err?.message || 'desconocido'));
+    }
+    setSaving(false);
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <KeyRound className="h-4 w-4 text-primary" /> Configuración de Stripe
+        </CardTitle>
+        <p className="text-xs text-muted-foreground">
+          Actualiza las claves de Stripe. Deja en blanco los campos que no deseas cambiar.
+          Los valores actuales son privados y no se muestran por seguridad.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {Object.entries(LABELS).map(([key, label]) => (
+          <div key={key} className="space-y-1.5">
+            <Label className="text-xs font-medium">{label}</Label>
+            <div className="flex gap-2">
+              <Input
+                type={show[key] ? 'text' : 'password'}
+                placeholder={`Nuevo valor para ${key}`}
+                value={fields[key]}
+                onChange={e => setFields(f => ({ ...f, [key]: e.target.value }))}
+                className="font-mono text-xs"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                type="button"
+                onClick={() => setShow(s => ({ ...s, [key]: !s[key] }))}
+              >
+                {show[key] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+            </div>
+          </div>
+        ))}
+        <div className="pt-2 border-t">
+          <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
+            {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+            Guardar cambios
+          </Button>
+        </div>
+        <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
+          <p className="font-medium text-foreground">🔗 Links útiles de Stripe:</p>
+          <p>• <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noreferrer" className="text-primary underline">API Keys</a> — Obtén tu Secret Key</p>
+          <p>• <a href="https://dashboard.stripe.com/products" target="_blank" rel="noreferrer" className="text-primary underline">Products</a> — Copia los Price IDs (price_...)</p>
+          <p>• <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noreferrer" className="text-primary underline">Webhooks</a> — Configura el endpoint y copia el Webhook Secret</p>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

@@ -7,8 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Settings, Building2, Phone, MapPin, DollarSign, TrendingUp, Save, Loader2, ImagePlus, Globe, X } from 'lucide-react';
+import { Settings, Building2, Phone, MapPin, DollarSign, TrendingUp, Save, Loader2, ImagePlus, Globe, X, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
+import PlanSelector from '@/components/billing/PlanSelector';
+import { useSearchParams } from 'react-router-dom';
 
 export default function BusinessSettings() {
   const { settings, saveSettings, loading, tr } = useBusiness();
@@ -16,9 +18,13 @@ export default function BusinessSettings() {
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const fileInputRef = useRef(null);
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     setForm(settings);
+    if (searchParams.get('plan_success') === '1') {
+      toast.success('¡Plan actualizado! Tu suscripción está activa.');
+    }
   }, [settings]);
 
   const update = (field, value) => setForm(f => ({ ...f, [field]: value }));
@@ -235,6 +241,16 @@ export default function BusinessSettings() {
         {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
         {tr('saveSettings')}
       </Button>
+
+      {/* Billing / Plans */}
+      <Card>
+        <CardContent className="p-5 space-y-4">
+          <h2 className="font-heading font-semibold text-base flex items-center gap-2">
+            <CreditCard className="h-4 w-4 text-primary" /> Plan y Suscripción
+          </h2>
+          <PlanSelector currentPlan={settings.plan || 'free'} />
+        </CardContent>
+      </Card>
     </div>
   );
 }

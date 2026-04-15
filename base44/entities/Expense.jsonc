@@ -12,6 +12,26 @@
     "date": {
       "type": "string",
       "format": "date"
+    },
+    "job_id": {
+      "type": "string",
+      "default": ""
+    },
+    "job_name": {
+      "type": "string",
+      "default": ""
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "materials",
+        "fuel",
+        "tools",
+        "labor",
+        "disposal",
+        "other"
+      ],
+      "default": "other"
     }
   },
   "required": [

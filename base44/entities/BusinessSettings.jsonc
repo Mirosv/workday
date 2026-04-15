@@ -40,6 +40,32 @@
         "es"
       ],
       "default": "en"
+    },
+    "plan": {
+      "type": "string",
+      "enum": [
+        "free",
+        "pro",
+        "premium"
+      ],
+      "default": "free"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "suspended",
+        "deleted"
+      ],
+      "default": "active"
+    },
+    "plan_expires_at": {
+      "type": "string",
+      "format": "date"
+    },
+    "notes": {
+      "type": "string",
+      "default": ""
     }
   },
   "required": [

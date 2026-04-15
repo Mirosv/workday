@@ -70,15 +70,20 @@ export default function PlanSelector({ currentPlan = 'free', onPlanChanged }) {
   const handleUpgrade = async (planKey) => {
     if (planKey === 'free') return;
     setLoading(planKey);
-    const res = await base44.functions.invoke('createCheckoutSession', {
-      plan: planKey,
-      success_url: `${window.location.origin}/settings?plan_success=1`,
-      cancel_url: `${window.location.origin}/settings`,
-    });
-    if (res.data?.url) {
-      window.location.href = res.data.url;
-    } else {
-      toast.error('No se pudo iniciar el pago. Intenta de nuevo.');
+    try {
+      const res = await base44.functions.invoke('createCheckoutSession', {
+        plan: planKey,
+        success_url: `${window.location.origin}/settings?plan_success=1`,
+        cancel_url: `${window.location.origin}/settings`,
+      });
+      if (res.data?.url) {
+        window.location.href = res.data.url;
+      } else {
+        toast.error('No se pudo iniciar el pago. Intenta de nuevo.');
+      }
+    } catch (err) {
+      const msg = err?.response?.data?.error || err?.message || 'Error al conectar con Stripe';
+      toast.error(msg);
     }
     setLoading(null);
   };

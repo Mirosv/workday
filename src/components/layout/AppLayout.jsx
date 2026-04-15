@@ -1,19 +1,22 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { FileText, Calculator, Briefcase, DollarSign, Menu, X, TreePine } from 'lucide-react';
+import { FileText, Calculator, Briefcase, DollarSign, Menu, X, TreePine, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useBusiness } from '@/lib/BusinessContext';
 
 const navItems = [
   { path: '/', label: 'Invoice Builder', icon: FileText },
   { path: '/material-converter', label: 'Material Converter', icon: Calculator },
   { path: '/job-tracker', label: 'Job Tracker', icon: Briefcase },
   { path: '/money-tracker', label: 'Money Tracker', icon: DollarSign },
+  { path: '/settings', label: 'Configuración', icon: Settings },
 ];
 
 export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const { settings } = useBusiness();
 
   return (
     <div className="min-h-screen bg-background font-body">
@@ -21,7 +24,7 @@ export default function AppLayout() {
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-sidebar border-b border-sidebar-border px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <TreePine className="h-6 w-6 text-sidebar-primary" />
-          <span className="font-heading font-bold text-sidebar-foreground text-lg">COREPROTECH</span>
+          <span className="font-heading font-bold text-sidebar-foreground text-lg">{settings.business_name}</span>
         </div>
         <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)} className="text-sidebar-foreground">
           {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -44,8 +47,8 @@ export default function AppLayout() {
               <TreePine className="h-5 w-5 text-sidebar-primary" />
             </div>
             <div>
-              <h1 className="font-heading font-bold text-sidebar-foreground text-lg leading-tight">COREPROTECH</h1>
-              <p className="text-xs text-sidebar-foreground/60">Anchored Landscaping</p>
+              <h1 className="font-heading font-bold text-sidebar-foreground text-lg leading-tight">{settings.business_name}</h1>
+              <p className="text-xs text-sidebar-foreground/60">{settings.business_phone || 'Configure tu negocio'}</p>
             </div>
           </div>
         </div>
@@ -73,7 +76,7 @@ export default function AppLayout() {
         </nav>
 
         <div className="p-4 border-t border-sidebar-border">
-          <p className="text-xs text-sidebar-foreground/40 text-center">3093151754 • 61753</p>
+          <p className="text-xs text-sidebar-foreground/40 text-center">{settings.business_address || ''}</p>
         </div>
       </aside>
 

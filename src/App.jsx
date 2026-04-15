@@ -10,6 +10,8 @@ import InvoiceBuilder from '@/pages/InvoiceBuilder';
 import MaterialConverter from '@/pages/MaterialConverter';
 import JobTracker from '@/pages/JobTracker';
 import MoneyTracker from '@/pages/MoneyTracker';
+import BusinessSettingsPage from '@/pages/BusinessSettings';
+import { BusinessProvider } from '@/lib/BusinessContext';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -36,15 +38,18 @@ const AuthenticatedApp = () => {
 
   // Render the main app
   return (
-    <Routes>
-      <Route element={<AppLayout />}>
-        <Route path="/" element={<InvoiceBuilder />} />
-        <Route path="/material-converter" element={<MaterialConverter />} />
-        <Route path="/job-tracker" element={<JobTracker />} />
-        <Route path="/money-tracker" element={<MoneyTracker />} />
-      </Route>
-      <Route path="*" element={<PageNotFound />} />
-    </Routes>
+    <BusinessProvider>
+      <Routes>
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<InvoiceBuilder />} />
+          <Route path="/material-converter" element={<MaterialConverter />} />
+          <Route path="/job-tracker" element={<JobTracker />} />
+          <Route path="/money-tracker" element={<MoneyTracker />} />
+          <Route path="/settings" element={<BusinessSettingsPage />} />
+        </Route>
+        <Route path="*" element={<PageNotFound />} />
+      </Routes>
+    </BusinessProvider>
   );
 };
 

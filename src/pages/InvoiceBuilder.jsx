@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,22 +9,23 @@ import { toast } from 'sonner';
 import JobDetailsSection from '@/components/invoice/JobDetailsSection';
 import ServicesSection from '@/components/invoice/ServicesSection';
 import PricingSection from '@/components/invoice/PricingSection';
+import { useBusiness } from '@/lib/BusinessContext';
 
 const today = new Date().toISOString().split('T')[0];
 
-const defaultData = {
-  business_name: 'COREPROTECH',
-  business_phone: '3093151754',
-  business_address: '61753',
+const buildDefault = (settings) => ({
+  business_name: settings.business_name || '',
+  business_phone: settings.business_phone || '',
+  business_address: settings.business_address || '',
   client_name: '',
   job_address: '',
   invoice_number: 'QT-0001',
   date: today,
   notes: '',
-  labor_rate: 0,
+  labor_rate: settings.default_labor_rate || 0,
   labor_hours: 0,
-  overhead_pct: 0,
-  profit_pct: 0,
+  overhead_pct: settings.default_overhead_pct || 0,
+  profit_pct: settings.default_profit_pct || 0,
   minimum_fee: 0,
   discount: 0,
   equipment_wear: 0,
@@ -35,13 +36,21 @@ const defaultData = {
   disposal_on: false,
   travel_mobilization: 0,
   travel_on: false,
-};
+});
 
 export default function InvoiceBuilder() {
-  const [data, setData] = useState(defaultData);
+  const { settings, loading } = useBusiness();
+  const [data, setData] = useState(() => buildDefault({}));
   const [services, setServices] = useState([]);
   const [clientMode, setClientMode] = useState(false);
   const queryClient = useQueryClient();
+
+  // Once settings load, pre-fill with business defaults
+  useEffect(() => {
+    if (!loading) {
+      setData(buildDefault(settings));
+    }
+  }, [loading]);
 
   const totals = useMemo(() => {
     const servicesSubtotal = services.reduce((s, svc) => s + (svc.line_total || 0), 0);

@@ -5,7 +5,11 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-// Add page imports here
+import AppLayout from '@/components/layout/AppLayout';
+import InvoiceBuilder from '@/pages/InvoiceBuilder';
+import MaterialConverter from '@/pages/MaterialConverter';
+import JobTracker from '@/pages/JobTracker';
+import MoneyTracker from '@/pages/MoneyTracker';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -33,7 +37,12 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <Routes>
-      {/* Add your page Route elements here */}
+      <Route element={<AppLayout />}>
+        <Route path="/" element={<InvoiceBuilder />} />
+        <Route path="/material-converter" element={<MaterialConverter />} />
+        <Route path="/job-tracker" element={<JobTracker />} />
+        <Route path="/money-tracker" element={<MoneyTracker />} />
+      </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

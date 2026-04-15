@@ -1,0 +1,41 @@
+{
+  "name": "BusinessSettings",
+  "type": "object",
+  "properties": {
+    "business_name": {
+      "type": "string",
+      "default": "COREPROTECH"
+    },
+    "business_phone": {
+      "type": "string",
+      "default": "3093151754"
+    },
+    "business_address": {
+      "type": "string",
+      "default": "61753"
+    },
+    "default_labor_rate": {
+      "type": "number",
+      "default": 0
+    },
+    "default_overhead_pct": {
+      "type": "number",
+      "default": 0
+    },
+    "default_profit_pct": {
+      "type": "number",
+      "default": 0
+    },
+    "language": {
+      "type": "string",
+      "enum": [
+        "en",
+        "es"
+      ],
+      "default": "en"
+    }
+  },
+  "required": [
+    "business_name"
+  ]
+}

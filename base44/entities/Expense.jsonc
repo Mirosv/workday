@@ -1,0 +1,21 @@
+{
+  "name": "Expense",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "amount": {
+      "type": "number",
+      "default": 0
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "name",
+    "amount"
+  ]
+}

@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { FileText, Calculator, Briefcase, DollarSign, Menu, X, TreePine, Settings, CalendarDays, LogOut } from 'lucide-react';
+import { FileText, Calculator, Briefcase, DollarSign, Menu, X, TreePine, Settings, CalendarDays, LogOut, Receipt } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useBusiness } from '@/lib/BusinessContext';
 import { base44 } from '@/api/base44Client';
 
 const navItems = [
-  { path: '/', label: 'Invoice Builder', icon: FileText },
+  { path: '/quotes', label: 'Quote Builder', icon: FileText },
+  { path: '/invoices', label: 'Invoice Builder', icon: Receipt },
   { path: '/material-converter', label: 'Material Converter', icon: Calculator },
   { path: '/job-tracker', label: 'CRM Pipeline', icon: Briefcase },
   { path: '/money-tracker', label: 'Money Tracker', icon: DollarSign },

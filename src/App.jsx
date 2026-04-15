@@ -6,7 +6,8 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import AppLayout from '@/components/layout/AppLayout';
-import InvoiceBuilder from '@/pages/InvoiceBuilder';
+import QuoteBuilder from '@/pages/QuoteBuilder';
+import InvoiceBuilderPage from '@/pages/InvoiceBuilderPage';
 import MaterialConverter from '@/pages/MaterialConverter';
 import JobTracker from '@/pages/JobTracker';
 import MoneyTracker from '@/pages/MoneyTracker';
@@ -43,7 +44,9 @@ const AuthenticatedApp = () => {
     <BusinessProvider>
       <Routes>
         <Route element={<AppLayout />}>
-          <Route path="/" element={<InvoiceBuilder />} />
+          <Route path="/" element={<QuoteBuilder />} />
+          <Route path="/quotes" element={<QuoteBuilder />} />
+          <Route path="/invoices" element={<InvoiceBuilderPage />} />
           <Route path="/material-converter" element={<MaterialConverter />} />
           <Route path="/job-tracker" element={<JobTracker />} />
           <Route path="/money-tracker" element={<MoneyTracker />} />

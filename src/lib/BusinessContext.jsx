@@ -7,6 +7,7 @@ const DEFAULT_SETTINGS = {
   business_name: 'Mi Empresa',
   business_phone: '',
   business_address: '',
+  logo_url: '',
   default_labor_rate: 0,
   default_overhead_pct: 0,
   default_profit_pct: 0,
@@ -17,16 +18,20 @@ export function BusinessProvider({ children }) {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [settingsId, setSettingsId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
-    base44.entities.BusinessSettings.list().then(list => {
+    base44.auth.me().then(user => {
+      setCurrentUser(user);
+      return base44.entities.BusinessSettings.filter({ created_by: user.email });
+    }).then(list => {
       if (list && list.length > 0) {
         const s = list[0];
         setSettings({ ...DEFAULT_SETTINGS, ...s });
         setSettingsId(s.id);
       }
       setLoading(false);
-    });
+    }).catch(() => setLoading(false));
   }, []);
 
   const saveSettings = async (newSettings) => {
@@ -41,7 +46,7 @@ export function BusinessProvider({ children }) {
   };
 
   return (
-    <BusinessContext.Provider value={{ settings, saveSettings, loading }}>
+    <BusinessContext.Provider value={{ settings, saveSettings, loading, currentUser }}>
       {children}
     </BusinessContext.Provider>
   );

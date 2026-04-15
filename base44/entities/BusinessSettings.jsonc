@@ -2,17 +2,24 @@
   "name": "BusinessSettings",
   "type": "object",
   "properties": {
+    "owner_email": {
+      "type": "string"
+    },
     "business_name": {
       "type": "string",
-      "default": "COREPROTECH"
+      "default": "Mi Empresa"
     },
     "business_phone": {
       "type": "string",
-      "default": "3093151754"
+      "default": ""
     },
     "business_address": {
       "type": "string",
-      "default": "61753"
+      "default": ""
+    },
+    "logo_url": {
+      "type": "string",
+      "default": ""
     },
     "default_labor_rate": {
       "type": "number",

@@ -78,20 +78,22 @@ export default function ClockShark() {
         </Badge>
       </div>
 
-      <Tabs defaultValue={isEmployee ? 'clock' : 'employees'}>
+      <Tabs defaultValue="clock">
         <TabsList className="flex-wrap h-auto gap-1">
-          {isEmployee && <TabsTrigger value="clock"><Clock className="h-3.5 w-3.5 mr-1" />Mi Tiempo</TabsTrigger>}
+          <TabsTrigger value="clock"><Clock className="h-3.5 w-3.5 mr-1" />Mi Tiempo</TabsTrigger>
           {isAdmin && <TabsTrigger value="employees"><Users className="h-3.5 w-3.5 mr-1" />Empleados</TabsTrigger>}
           {isAdmin && <TabsTrigger value="live"><MapPin className="h-3.5 w-3.5 mr-1" />En Vivo</TabsTrigger>}
           <TabsTrigger value="timesheet"><FileText className="h-3.5 w-3.5 mr-1" />Registros</TabsTrigger>
           <TabsTrigger value="timeoff"><Calendar className="h-3.5 w-3.5 mr-1" />Tiempo Libre</TabsTrigger>
         </TabsList>
 
-        {isEmployee && (
-          <TabsContent value="clock" className="mt-4">
-            <ClockInPanel ownerEmail={ownerEmail} employee={myEmployee} currentUser={currentUser} />
-          </TabsContent>
-        )}
+        <TabsContent value="clock" className="mt-4">
+          {(isEmployee || isAdmin) ? (
+            <ClockInPanel ownerEmail={ownerEmail} employee={myEmployee} currentUser={currentUser} isAdmin={isAdmin} />
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-10">No tienes un perfil de empleado activo. Pide al administrador que te agregue.</p>
+          )}
+        </TabsContent>
 
         {isAdmin && (
           <TabsContent value="employees" className="mt-4">

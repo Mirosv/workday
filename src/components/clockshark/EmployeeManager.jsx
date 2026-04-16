@@ -8,10 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { UserPlus, Edit2, Trash2, Users, Mail, Loader2, Clock, Copy } from 'lucide-react';
+import { UserPlus, Edit2, Trash2, Users, Mail, Loader2, Clock } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 
-const empty = { full_name: '', email: '', phone: '', position: '', hourly_rate: '', role: 'employee', status: 'active', notes: '' };
+const empty = { full_name: '', email: '', phone: '', position: '', hourly_rate: '', role: 'employee', status: 'active', lunch_break_minutes: 30, lunch_paid: false, notes: '' };
 
 export default function EmployeeManager({ ownerEmail }) {
   const qc = useQueryClient();
@@ -233,6 +234,38 @@ export default function EmployeeManager({ ownerEmail }) {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            {/* Lunch settings */}
+            <div className="border rounded-lg p-3 space-y-3 bg-muted/30">
+              <p className="text-xs font-medium text-foreground">⏱ Configuración de Lunch</p>
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-xs font-medium">Lunch pagado</p>
+                  <p className="text-xs text-muted-foreground">Si está activado, el lunch NO se descuenta de las horas</p>
+                </div>
+                <Switch
+                  checked={!!form.lunch_paid}
+                  onCheckedChange={v => setForm(f => ({ ...f, lunch_paid: v }))}
+                />
+              </div>
+              {!form.lunch_paid && (
+                <div className="space-y-1">
+                  <Label className="text-xs">Minutos de lunch a descontar</Label>
+                  <Select
+                    value={String(form.lunch_break_minutes ?? 30)}
+                    onValueChange={v => setForm(f => ({ ...f, lunch_break_minutes: parseInt(v) }))}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">Sin descuento</SelectItem>
+                      <SelectItem value="15">15 minutos</SelectItem>
+                      <SelectItem value="30">30 minutos</SelectItem>
+                      <SelectItem value="45">45 minutos</SelectItem>
+                      <SelectItem value="60">60 minutos</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
             <p className="text-xs text-muted-foreground bg-muted rounded p-2">
               💡 Después de agregar al empleado, usa el botón "Invitar" para enviarle acceso a la app.

@@ -37,6 +37,16 @@
       ],
       "default": "active"
     },
+    "lunch_break_minutes": {
+      "type": "number",
+      "default": 30,
+      "description": "Minutos de lunch a descontar por turno"
+    },
+    "lunch_paid": {
+      "type": "boolean",
+      "default": false,
+      "description": "Si es true, el lunch se paga y NO se descuenta de las horas"
+    },
     "notes": {
       "type": "string"
     }

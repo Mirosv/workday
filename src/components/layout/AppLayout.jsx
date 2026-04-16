@@ -27,7 +27,10 @@ export default function AppLayout() {
     { path: '/settings', label: tr('settings'), icon: Settings, adminOnly: true },
   ];
 
-  const navItems = allNavItems.filter(item => !item.adminOnly || currentUserRole === 'admin');
+  // Employees only see TimeTrack
+  const navItems = currentUserRole === 'admin'
+    ? allNavItems
+    : allNavItems.filter(item => item.path === '/clockshark');
 
   useEffect(() => {
     base44.auth.me().then(u => {

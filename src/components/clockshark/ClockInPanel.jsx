@@ -14,16 +14,18 @@ function formatDuration(minutes) {
   return `${h}h ${m}m`;
 }
 
-export default function ClockInPanel({ ownerEmail, employee, currentUser }) {
+export default function ClockInPanel({ ownerEmail, employee, currentUser, isAdmin }) {
   const qc = useQueryClient();
   const [gettingLocation, setGettingLocation] = useState(false);
   const [notes, setNotes] = useState('');
   const [elapsed, setElapsed] = useState(0);
 
   const { data: activeEntry } = useQuery({
-    queryKey: ['active-entry', employee?.id],
-    queryFn: () => base44.entities.TimeEntry.filter({ employee_id: employee.id, status: 'active' }),
-    enabled: !!employee?.id,
+    queryKey: ['active-entry', employee?.id || currentUser?.id],
+    queryFn: () => employee?.id
+      ? base44.entities.TimeEntry.filter({ employee_id: employee.id, status: 'active' })
+      : base44.entities.TimeEntry.filter({ business_owner_email: ownerEmail, employee_name: currentUser?.full_name, status: 'active' }),
+    enabled: !!(employee?.id || (isAdmin && ownerEmail)),
     select: data => data?.[0] || null,
   });
 
@@ -57,13 +59,20 @@ export default function ClockInPanel({ ownerEmail, employee, currentUser }) {
     );
   });
 
+  // lunch deduction info
+  const lunchPaid = employee?.lunch_paid ?? false;
+  const lunchBreak = lunchPaid ? 0 : (employee?.lunch_break_minutes ?? 0);
+
+  const empId = employee?.id || `admin-${currentUser?.email}`;
+  const empName = employee?.full_name || currentUser?.full_name || 'Admin';
+
   const clockIn = useMutation({
     mutationFn: async () => {
       const { lat, lng, address } = await getLocation();
       return base44.entities.TimeEntry.create({
         business_owner_email: ownerEmail,
-        employee_id: employee.id,
-        employee_name: employee.full_name,
+        employee_id: empId,
+        employee_name: empName,
         clock_in: new Date().toISOString(),
         clock_in_lat: lat,
         clock_in_lng: lng,
@@ -79,7 +88,8 @@ export default function ClockInPanel({ ownerEmail, employee, currentUser }) {
   const clockOut = useMutation({
     mutationFn: async () => {
       const { lat, lng, address } = await getLocation();
-      const duration = Math.floor((Date.now() - new Date(activeEntry.clock_in)) / 60000);
+      const rawDuration = Math.floor((Date.now() - new Date(activeEntry.clock_in)) / 60000);
+      const duration = Math.max(0, rawDuration - lunchBreak);
       return base44.entities.TimeEntry.update(activeEntry.id, {
         clock_out: new Date().toISOString(),
         clock_out_lat: lat,
@@ -97,8 +107,22 @@ export default function ClockInPanel({ ownerEmail, employee, currentUser }) {
   const isClockedIn = !!activeEntry;
   const loading = clockIn.isPending || clockOut.isPending || gettingLocation;
 
+  if (!employee && !isAdmin) {
+    return (
+      <div className="flex flex-col items-center justify-center h-40 gap-2 text-muted-foreground text-sm">
+        <Clock className="h-8 w-8" />
+        <p>No tienes perfil de empleado activo.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 max-w-md mx-auto">
+      {lunchBreak > 0 && (
+        <p className="text-xs text-muted-foreground text-center">
+          ⏱ Se descontarán <strong>{lunchBreak} min</strong> de lunch al registrar salida
+        </p>
+      )}
       <Card className={isClockedIn ? 'border-green-300 bg-green-50' : 'border-slate-200'}>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">

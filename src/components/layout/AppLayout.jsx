@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { FileText, Calculator, Briefcase, DollarSign, Menu, X, TreePine, Settings, CalendarDays, LogOut, Receipt, ShieldCheck } from 'lucide-react';
+import { FileText, Calculator, Briefcase, DollarSign, Menu, X, TreePine, Settings, CalendarDays, LogOut, Receipt, ShieldCheck, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useBusiness } from '@/lib/BusinessContext';
@@ -21,6 +21,7 @@ export default function AppLayout() {
     { path: '/job-tracker', label: tr('crmPipeline'), icon: Briefcase },
     { path: '/money-tracker', label: tr('moneyTracker'), icon: DollarSign },
     { path: '/booking', label: tr('booking'), icon: CalendarDays },
+    { path: '/clockshark', label: 'ClockShark', icon: Clock },
     { path: '/settings', label: tr('settings'), icon: Settings },
   ];
 

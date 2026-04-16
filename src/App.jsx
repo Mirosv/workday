@@ -16,6 +16,7 @@ import BookingAdmin from '@/pages/BookingAdmin';
 import BookingPublic from '@/pages/BookingPublic';
 import { BusinessProvider } from '@/lib/BusinessContext';
 import SuperAdmin from '@/pages/SuperAdmin';
+import ClockShark from '@/pages/ClockShark';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -54,6 +55,7 @@ const AuthenticatedApp = () => {
           <Route path="/settings" element={<BusinessSettingsPage />} />
           <Route path="/booking" element={<BookingAdmin />} />
           <Route path="/super-admin" element={<SuperAdmin />} />
+          <Route path="/clockshark" element={<ClockShark />} />
         </Route>
         <Route path="/booking/public" element={<BookingPublic />} />
         <Route path="*" element={<PageNotFound />} />

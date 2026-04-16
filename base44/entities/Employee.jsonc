@@ -1,0 +1,48 @@
+{
+  "name": "Employee",
+  "type": "object",
+  "properties": {
+    "business_owner_email": {
+      "type": "string"
+    },
+    "full_name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "employee"
+      ],
+      "default": "employee"
+    },
+    "position": {
+      "type": "string"
+    },
+    "hourly_rate": {
+      "type": "number",
+      "default": 0
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "full_name",
+    "business_owner_email"
+  ]
+}

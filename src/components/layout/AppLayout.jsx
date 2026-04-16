@@ -21,7 +21,7 @@ export default function AppLayout() {
     { path: '/job-tracker', label: tr('crmPipeline'), icon: Briefcase },
     { path: '/money-tracker', label: tr('moneyTracker'), icon: DollarSign },
     { path: '/booking', label: tr('booking'), icon: CalendarDays },
-    { path: '/clockshark', label: 'ClockShark', icon: Clock },
+    { path: '/clockshark', label: 'TimeTrack', icon: Clock },
     { path: '/settings', label: tr('settings'), icon: Settings },
   ];
 

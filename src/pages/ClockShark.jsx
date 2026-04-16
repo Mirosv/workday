@@ -16,13 +16,15 @@ export default function ClockShark() {
   const { settings } = useBusiness();
   const [currentUser, setCurrentUser] = useState(null);
   const [myEmployee, setMyEmployee] = useState(null);
-  const ownerEmail = settings.owner_email;
 
   useEffect(() => {
     base44.auth.me().then(u => {
       setCurrentUser(u);
     });
   }, []);
+
+  // Use settings.owner_email if available, otherwise fall back to current admin's email
+  const ownerEmail = settings.owner_email || (currentUser?.role === 'admin' ? currentUser?.email : null);
 
   // Check if current user is an employee of this business
   useEffect(() => {
@@ -57,7 +59,7 @@ export default function ClockShark() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-heading font-bold text-foreground flex items-center gap-2">
-            <Clock className="h-6 w-6 text-primary" /> ClockShark
+            <Clock className="h-6 w-6 text-primary" /> TimeTrack
           </h1>
           <p className="text-sm text-muted-foreground">Control de tiempo y empleados</p>
         </div>

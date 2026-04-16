@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useBusiness } from '@/lib/BusinessContext';
+import { useBusiness, SUPER_ADMIN_EMAIL } from '@/lib/BusinessContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,9 +21,13 @@ export default function ClockShark() {
   useEffect(() => {
     base44.auth.me().then(async u => {
       setCurrentUser(u);
-      if (u?.role === 'admin') {
-        // Admin: ownerEmail is their own email (or from settings)
+      const isSuperAdmin = u?.email === SUPER_ADMIN_EMAIL;
+      if (u?.role === 'admin' && !isSuperAdmin) {
+        // Business admin: ownerEmail is their own email (or from settings)
         setResolvedOwnerEmail(settings.owner_email || u.email);
+      } else if (isSuperAdmin) {
+        // Super admin has no employee records — just set their own email
+        setResolvedOwnerEmail(u.email);
       } else {
         // Employee: find which business they belong to by looking up their email
         const results = await base44.entities.Employee.filter({ email: u.email, status: 'active' });

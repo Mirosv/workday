@@ -4,6 +4,12 @@ import { t } from '@/lib/i18n';
 
 const BusinessContext = createContext(null);
 
+// 3 levels:
+// super_admin  → email === SUPER_ADMIN_EMAIL, role: 'admin'  (platform owner)
+// admin        → role: 'admin', normal business owner
+// employee     → role: 'user', works for an admin
+export const SUPER_ADMIN_EMAIL = 'valerio.miros85@gmail.com';
+
 const DEFAULT_SETTINGS = {
   business_name: 'Mi Empresa',
   business_phone: '',
@@ -24,16 +30,31 @@ export function BusinessProvider({ children }) {
   useEffect(() => {
     base44.auth.me().then(async user => {
       setCurrentUser(user);
-      // Admin: load their own settings
-      if (user.role === 'admin') {
+
+      const isSuperAdmin = user.email === SUPER_ADMIN_EMAIL;
+      const isAdmin = user.role === 'admin' && !isSuperAdmin;
+      const isEmployee = user.role !== 'admin'; // role: 'user'
+
+      if (isSuperAdmin) {
+        // Super admin: no business settings needed, just finish loading
+        setLoading(false);
+        return;
+      }
+
+      if (isAdmin) {
+        // Admin (business owner): load their own settings
         const list = await base44.entities.BusinessSettings.filter({ created_by: user.email });
         if (list && list.length > 0) {
           const s = list[0];
           setSettings({ ...DEFAULT_SETTINGS, ...s });
           setSettingsId(s.id);
         }
-      } else {
-        // Employee: find which business they belong to, then load that admin's settings
+        setLoading(false);
+        return;
+      }
+
+      if (isEmployee) {
+        // Employee: find which business they belong to, load that admin's settings
         const empList = await base44.entities.Employee.filter({ email: user.email, status: 'active' });
         if (empList && empList.length > 0) {
           const ownerEmail = empList[0].business_owner_email;
@@ -44,7 +65,10 @@ export function BusinessProvider({ children }) {
             setSettingsId(s.id);
           }
         }
+        setLoading(false);
+        return;
       }
+
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);

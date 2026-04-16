@@ -3,10 +3,8 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { FileText, Calculator, Briefcase, DollarSign, Menu, X, TreePine, Settings, CalendarDays, LogOut, Receipt, ShieldCheck, Clock, Car, Landmark, FolderDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useBusiness } from '@/lib/BusinessContext';
+import { useBusiness, SUPER_ADMIN_EMAIL } from '@/lib/BusinessContext';
 import { base44 } from '@/api/base44Client';
-
-const SUPER_ADMIN_EMAIL = 'valerio.miros85@gmail.com';
 
 export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -15,6 +13,11 @@ export default function AppLayout() {
   const { settings, tr } = useBusiness();
 
   const [currentUserRole, setCurrentUserRole] = useState('');
+
+  // Derived role levels
+  const isSuperAdmin = currentUserEmail === SUPER_ADMIN_EMAIL;
+  const isAdmin = currentUserRole === 'admin' && !isSuperAdmin;
+  const isEmployee = currentUserRole !== 'admin'; // role: 'user'
 
   const allNavItems = [
     { path: '/quotes', label: tr('quoteBuilder'), icon: FileText, adminOnly: true },
@@ -30,10 +33,10 @@ export default function AppLayout() {
     { path: '/settings', label: tr('settings'), icon: Settings, adminOnly: true },
   ];
 
-  // Employees only see TimeTrack
-  const navItems = currentUserRole === 'admin'
+  // Super admin and admin see all nav; employees only see TimeTrack
+  const navItems = (isSuperAdmin || isAdmin)
     ? allNavItems
-    : allNavItems.filter(item => item.path === '/clockshark');
+    : allNavItems.filter(item => !item.adminOnly);
 
   useEffect(() => {
     base44.auth.me().then(u => {

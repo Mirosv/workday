@@ -90,7 +90,26 @@ export default function MoneyTracker() {
     const income = paidJobs.reduce((s, j) => s + (j.grand_total || j.total_price || 0), 0);
     const monthExpenses = expenses.filter(e => isThisMonth(e.date));
     const totalExpenses = monthExpenses.reduce((s, e) => s + (e.amount || 0), 0);
-    const profit = income - totalExpenses;
+
+    // Labor cost this month
+    const empMap = {};
+    employees.forEach(emp => {
+      const entries = timeEntries.filter(e => {
+        if (e.employee_id !== emp.id) return false;
+        const d = new Date(e.clock_in);
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      });
+      const totalMins = entries.reduce((s, e) => s + (e.duration_minutes || 0), 0);
+      const hours = totalMins / 60;
+      const cost = hours * (emp.hourly_rate || 0);
+      if (hours > 0 || emp.status === 'active') {
+        empMap[emp.id] = { name: emp.full_name, hours: hours.toFixed(1), cost, hourly_rate: emp.hourly_rate || 0 };
+      }
+    });
+    const totalLaborCost = Object.values(empMap).reduce((s, e) => s + e.cost, 0);
+
+    const totalCosts = totalExpenses + totalLaborCost;
+    const profit = income - totalCosts;
     const margin = income > 0 ? ((profit / income) * 100).toFixed(1) : '0.0';
 
     // All-time totals
@@ -111,28 +130,10 @@ export default function MoneyTracker() {
       byProject[key] = (byProject[key] || 0) + (e.amount || 0);
     });
 
-    return { income, totalExpenses, profit, margin, allIncome, allExpenses, byCat, byProject };
-  }, [jobs, expenses]);
+    return { income, totalExpenses, totalLaborCost, totalCosts, profit, margin, allIncome, allExpenses, byCat, byProject, empMap };
+  }, [jobs, expenses, employees, timeEntries]);
 
-  // Labor cost this month per employee
-  const laborStats = useMemo(() => {
-    const empMap = {};
-    employees.forEach(emp => {
-      const entries = timeEntries.filter(e => {
-        if (e.employee_id !== emp.id) return false;
-        const d = new Date(e.clock_in);
-        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-      });
-      const totalMins = entries.reduce((s, e) => s + (e.duration_minutes || 0), 0);
-      const hours = totalMins / 60;
-      const cost = hours * (emp.hourly_rate || 0);
-      if (hours > 0 || emp.status === 'active') {
-        empMap[emp.id] = { name: emp.full_name, hours: hours.toFixed(1), cost, hourly_rate: emp.hourly_rate || 0 };
-      }
-    });
-    const totalLaborCost = Object.values(empMap).reduce((s, e) => s + e.cost, 0);
-    return { empMap, totalLaborCost };
-  }, [employees, timeEntries]);
+
 
   // Last 6 months chart data
   const chartData = useMemo(() => {
@@ -181,7 +182,10 @@ export default function MoneyTracker() {
       {/* KPI Cards - This Month */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatCard label={tr('incomeMonth')} value={stats.income} icon={TrendingUp} positive />
-        <StatCard label={tr('expensesMonth')} value={stats.totalExpenses} icon={TrendingDown} />
+        <div className="space-y-2">
+          <StatCard label={tr('expensesMonth')} value={stats.totalExpenses} icon={TrendingDown} compact />
+          <StatCard label="Nómina mes" value={stats.totalLaborCost} icon={Users} compact />
+        </div>
         <StatCard label={tr('profitMonth')} value={stats.profit} icon={DollarSign} positive={stats.profit >= 0} highlight />
         <Card>
           <CardContent className="p-4">
@@ -189,6 +193,7 @@ export default function MoneyTracker() {
             <p className={`font-heading font-bold text-2xl mt-1 ${stats.profit >= 0 ? 'text-primary' : 'text-destructive'}`}>
               {stats.margin}%
             </p>
+            <p className="text-xs text-muted-foreground mt-1">Total costos: ${stats.totalCosts.toFixed(2)}</p>
           </CardContent>
         </Card>
       </div>
@@ -332,12 +337,12 @@ export default function MoneyTracker() {
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <Users className="h-4 w-4 text-primary" /> Nómina — {new Date().toLocaleDateString('es', { month: 'long' })}
-              <span className="ml-auto text-destructive font-bold text-sm">-${laborStats.totalLaborCost.toFixed(2)}</span>
+              <span className="ml-auto text-destructive font-bold text-sm">-${stats.totalLaborCost.toFixed(2)}</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="divide-y">
-              {Object.values(laborStats.empMap).map(emp => (
+              {Object.values(stats.empMap).map(emp => (
                 <div key={emp.name} className="flex items-center justify-between py-2 text-sm">
                   <div>
                     <p className="font-medium">{emp.name}</p>
@@ -415,15 +420,15 @@ export default function MoneyTracker() {
   );
 }
 
-function StatCard({ label, value, icon: Icon, positive, highlight }) {
+function StatCard({ label, value, icon: Icon, positive, highlight, compact }) {
   return (
     <Card className={highlight ? 'border-primary/30 bg-primary/5' : ''}>
-      <CardContent className="p-4">
+      <CardContent className={compact ? 'p-3' : 'p-4'}>
         <div className="flex items-center justify-between">
           <p className="text-xs text-muted-foreground font-medium">{label}</p>
           <Icon className={`h-4 w-4 ${positive ? 'text-primary' : 'text-destructive'}`} />
         </div>
-        <p className={`font-heading font-bold text-2xl mt-1 ${positive ? 'text-primary' : 'text-destructive'}`}>
+        <p className={`font-heading font-bold ${compact ? 'text-lg' : 'text-2xl'} mt-1 ${positive ? 'text-primary' : 'text-destructive'}`}>
           ${(value || 0).toFixed(2)}
         </p>
       </CardContent>

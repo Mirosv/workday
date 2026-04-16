@@ -14,6 +14,11 @@ import { useSearchParams } from 'react-router-dom';
 
 export default function BusinessSettings() {
   const { settings, saveSettings, loading, tr } = useBusiness();
+  const [currentUserRole, setCurrentUserRole] = useState('');
+
+  useEffect(() => {
+    base44.auth.me().then(u => setCurrentUserRole(u?.role || ''));
+  }, []);
   const [form, setForm] = useState(settings);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -50,6 +55,16 @@ export default function BusinessSettings() {
     return (
       <div className="flex justify-center py-20">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (currentUserRole && currentUserRole !== 'admin') {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 gap-3 text-center">
+        <Settings className="h-12 w-12 text-muted-foreground" />
+        <h2 className="text-lg font-semibold">Acceso restringido</h2>
+        <p className="text-muted-foreground text-sm max-w-xs">Solo los administradores pueden configurar la empresa.</p>
       </div>
     );
   }

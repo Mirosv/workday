@@ -14,19 +14,26 @@ export default function AppLayout() {
   const location = useLocation();
   const { settings, tr } = useBusiness();
 
-  const navItems = [
-    { path: '/quotes', label: tr('quoteBuilder'), icon: FileText },
-    { path: '/invoices', label: tr('invoiceBuilder'), icon: Receipt },
-    { path: '/material-converter', label: tr('materialConverter'), icon: Calculator },
-    { path: '/job-tracker', label: tr('crmPipeline'), icon: Briefcase },
-    { path: '/money-tracker', label: tr('moneyTracker'), icon: DollarSign },
-    { path: '/booking', label: tr('booking'), icon: CalendarDays },
-    { path: '/clockshark', label: 'TimeTrack', icon: Clock },
-    { path: '/settings', label: tr('settings'), icon: Settings },
+  const [currentUserRole, setCurrentUserRole] = useState('');
+
+  const allNavItems = [
+    { path: '/quotes', label: tr('quoteBuilder'), icon: FileText, adminOnly: true },
+    { path: '/invoices', label: tr('invoiceBuilder'), icon: Receipt, adminOnly: true },
+    { path: '/material-converter', label: tr('materialConverter'), icon: Calculator, adminOnly: true },
+    { path: '/job-tracker', label: tr('crmPipeline'), icon: Briefcase, adminOnly: true },
+    { path: '/money-tracker', label: tr('moneyTracker'), icon: DollarSign, adminOnly: true },
+    { path: '/booking', label: tr('booking'), icon: CalendarDays, adminOnly: true },
+    { path: '/clockshark', label: 'TimeTrack', icon: Clock, adminOnly: false },
+    { path: '/settings', label: tr('settings'), icon: Settings, adminOnly: true },
   ];
 
+  const navItems = allNavItems.filter(item => !item.adminOnly || currentUserRole === 'admin');
+
   useEffect(() => {
-    base44.auth.me().then(u => setCurrentUserEmail(u?.email || ''));
+    base44.auth.me().then(u => {
+      setCurrentUserEmail(u?.email || '');
+      setCurrentUserRole(u?.role || '');
+    });
   }, []);
 
   return (

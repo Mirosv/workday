@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { UserPlus, Edit2, Trash2, Users, Mail, Loader2, Clock } from 'lucide-react';
+import { UserPlus, Edit2, Trash2, Users, Mail, Loader2, Clock, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 
 const empty = { full_name: '', email: '', phone: '', position: '', hourly_rate: '', role: 'employee', status: 'active', notes: '' };
@@ -18,7 +18,10 @@ export default function EmployeeManager({ ownerEmail }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(empty);
   const [editId, setEditId] = useState(null);
-  const [inviting, setInviting] = useState(null); // employee id being invited
+  const [inviting, setInviting] = useState(null);
+  const [inviteOnlyOpen, setInviteOnlyOpen] = useState(false);
+  const [inviteOnlyEmail, setInviteOnlyEmail] = useState('');
+  const [invitingOnly, setInvitingOnly] = useState(false);
 
   const { data: employees = [] } = useQuery({
     queryKey: ['employees', ownerEmail],
@@ -75,15 +78,63 @@ export default function EmployeeManager({ ownerEmail }) {
     }
   };
 
+  const handleInviteOnly = async () => {
+    if (!inviteOnlyEmail) { toast.error('Ingresa un email'); return; }
+    setInvitingOnly(true);
+    try {
+      await base44.users.inviteUser(inviteOnlyEmail, 'user');
+      toast.success(`Invitación enviada a ${inviteOnlyEmail}`);
+      setInviteOnlyEmail('');
+      setInviteOnlyOpen(false);
+    } catch (e) {
+      toast.error('Error al enviar invitación');
+    } finally {
+      setInvitingOnly(false);
+    }
+  };
+
   const openAdd = () => { setForm(empty); setEditId(null); setOpen(true); };
   const openEdit = (emp) => { setForm({ ...emp }); setEditId(emp.id); setOpen(true); };
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <p className="text-sm text-muted-foreground">{employees.length} empleado(s)</p>
-        <Button size="sm" onClick={openAdd}><UserPlus className="h-4 w-4 mr-1" />Agregar</Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => setInviteOnlyOpen(true)}>
+            <Mail className="h-4 w-4 mr-1" />Solo invitar
+          </Button>
+          <Button size="sm" onClick={openAdd}><UserPlus className="h-4 w-4 mr-1" />Agregar</Button>
+        </div>
       </div>
+
+      {/* Invite Only Dialog */}
+      <Dialog open={inviteOnlyOpen} onOpenChange={setInviteOnlyOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Enviar invitación</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">Envía una invitación de acceso a la app sin agregar un perfil de empleado.</p>
+            <div className="space-y-1">
+              <Label className="text-xs">Email</Label>
+              <Input
+                type="email"
+                placeholder="empleado@email.com"
+                value={inviteOnlyEmail}
+                onChange={e => setInviteOnlyEmail(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-2 pt-1">
+              <Button variant="outline" className="flex-1" onClick={() => setInviteOnlyOpen(false)}>Cancelar</Button>
+              <Button className="flex-1" onClick={handleInviteOnly} disabled={invitingOnly || !inviteOnlyEmail}>
+                {invitingOnly ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4 mr-1" />}
+                Enviar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {employees.length === 0 ? (
         <Card>

@@ -1,0 +1,54 @@
+{
+  "name": "MileageLog",
+  "type": "object",
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "description": {
+      "type": "string",
+      "description": "Business purpose of the trip"
+    },
+    "from_location": {
+      "type": "string"
+    },
+    "to_location": {
+      "type": "string"
+    },
+    "odometer_start": {
+      "type": "number",
+      "default": 0
+    },
+    "odometer_end": {
+      "type": "number",
+      "default": 0
+    },
+    "business_miles": {
+      "type": "number",
+      "default": 0,
+      "description": "Calculated or manually entered business miles"
+    },
+    "vehicle": {
+      "type": "string",
+      "default": ""
+    },
+    "job_id": {
+      "type": "string",
+      "default": ""
+    },
+    "job_name": {
+      "type": "string",
+      "default": ""
+    },
+    "notes": {
+      "type": "string",
+      "default": ""
+    }
+  },
+  "required": [
+    "date",
+    "description",
+    "business_miles"
+  ]
+}

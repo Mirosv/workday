@@ -55,8 +55,9 @@ export default function MoneyTracker() {
     },
   });
 
-  const { settings } = useBusiness();
-  const ownerEmail = settings.owner_email;
+  const { settings, currentUser } = useBusiness();
+  // Admin uses their own email; employee uses the business owner's email from settings
+  const ownerEmail = settings.owner_email || currentUser?.email;
 
   const { data: employees = [] } = useQuery({
     queryKey: ['employees', ownerEmail],
@@ -100,8 +101,16 @@ export default function MoneyTracker() {
     employees.forEach(emp => {
       const entries = timeEntries.filter(e => {
         if (e.employee_id !== emp.id) return false;
-        const d = e.clock_in ? e.clock_in.split('T')[0] : null;
-        return d && inRange(d, dateFrom, dateTo);
+        if (!e.clock_in) return false;
+        // Normalize to YYYY-MM-DD regardless of ISO format
+        const raw = e.clock_in;
+        let d;
+        if (typeof raw === 'string' && raw.length >= 10) {
+          d = raw.substring(0, 10);
+        } else {
+          d = new Date(raw).toISOString().split('T')[0];
+        }
+        return inRange(d, dateFrom, dateTo);
       });
       const totalMins = entries.reduce((s, e) => s + (e.duration_minutes || 0), 0);
       const hours = totalMins / 60;

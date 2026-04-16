@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { UserPlus, Edit2, Trash2, Users } from 'lucide-react';
+import { UserPlus, Edit2, Trash2, Users, Mail, Loader2, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
 const empty = { full_name: '', email: '', phone: '', position: '', hourly_rate: '', role: 'employee', status: 'active', notes: '' };
@@ -18,17 +18,42 @@ export default function EmployeeManager({ ownerEmail }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(empty);
   const [editId, setEditId] = useState(null);
+  const [inviting, setInviting] = useState(null); // employee id being invited
 
   const { data: employees = [] } = useQuery({
     queryKey: ['employees', ownerEmail],
     queryFn: () => base44.entities.Employee.filter({ business_owner_email: ownerEmail }),
   });
 
+  // Fetch time entries to compute labor cost per employee (current month)
+  const { data: timeEntries = [] } = useQuery({
+    queryKey: ['timeentries', ownerEmail],
+    queryFn: () => base44.entities.TimeEntry.filter({ business_owner_email: ownerEmail, status: 'completed' }, '-clock_in', 500),
+  });
+
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+
+  function getLaborCost(empId, hourlyRate) {
+    const entries = timeEntries.filter(e => {
+      if (e.employee_id !== empId) return false;
+      const d = new Date(e.clock_in);
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    });
+    const totalMins = entries.reduce((s, e) => s + (e.duration_minutes || 0), 0);
+    const hours = totalMins / 60;
+    return { hours: hours.toFixed(1), cost: (hours * (hourlyRate || 0)).toFixed(2) };
+  }
+
   const save = useMutation({
     mutationFn: (data) => editId
       ? base44.entities.Employee.update(editId, data)
       : base44.entities.Employee.create({ ...data, business_owner_email: ownerEmail }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['employees'] }); setOpen(false); toast.success(editId ? 'Empleado actualizado' : 'Empleado agregado'); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['employees'] });
+      setOpen(false);
+      toast.success(editId ? 'Empleado actualizado' : 'Empleado agregado');
+    },
     onError: () => toast.error('Error al guardar'),
   });
 
@@ -36,6 +61,19 @@ export default function EmployeeManager({ ownerEmail }) {
     mutationFn: (id) => base44.entities.Employee.delete(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['employees'] }); toast.success('Empleado eliminado'); },
   });
+
+  const handleInvite = async (emp) => {
+    if (!emp.email) { toast.error('El empleado no tiene email'); return; }
+    setInviting(emp.id);
+    try {
+      await base44.users.inviteUser(emp.email, 'user');
+      toast.success(`Invitación enviada a ${emp.email}`);
+    } catch (e) {
+      toast.error('Error al enviar invitación');
+    } finally {
+      setInviting(null);
+    }
+  };
 
   const openAdd = () => { setForm(empty); setEditId(null); setOpen(true); };
   const openEdit = (emp) => { setForm({ ...emp }); setEditId(emp.id); setOpen(true); };
@@ -56,25 +94,54 @@ export default function EmployeeManager({ ownerEmail }) {
         </Card>
       ) : (
         <div className="space-y-2">
-          {employees.map(emp => (
-            <Card key={emp.id}>
-              <CardContent className="p-4 flex items-center justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-medium text-sm">{emp.full_name}</p>
-                    <Badge variant={emp.status === 'active' ? 'default' : 'secondary'} className="text-xs">{emp.status === 'active' ? 'Activo' : 'Inactivo'}</Badge>
-                    {emp.role === 'admin' && <Badge className="text-xs bg-amber-500">Admin</Badge>}
+          {employees.map(emp => {
+            const { hours, cost } = getLaborCost(emp.id, emp.hourly_rate);
+            return (
+              <Card key={emp.id}>
+                <CardContent className="p-4 flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-medium text-sm">{emp.full_name}</p>
+                      <Badge variant={emp.status === 'active' ? 'default' : 'secondary'} className="text-xs">
+                        {emp.status === 'active' ? 'Activo' : 'Inactivo'}
+                      </Badge>
+                      {emp.role === 'admin' && <Badge className="text-xs bg-amber-500">Admin</Badge>}
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate">{emp.email}{emp.position ? ` · ${emp.position}` : ''}</p>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                      {emp.hourly_rate > 0 && <span>${emp.hourly_rate}/hr</span>}
+                      {parseFloat(hours) > 0 && (
+                        <span className="flex items-center gap-1 text-primary font-medium">
+                          <Clock className="h-3 w-3" />
+                          {hours}h este mes · <span className="text-destructive">${cost}</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground truncate">{emp.email} {emp.position ? `· ${emp.position}` : ''}</p>
-                  {emp.hourly_rate > 0 && <p className="text-xs text-muted-foreground">${emp.hourly_rate}/hr</p>}
-                </div>
-                <div className="flex gap-1 shrink-0">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(emp)}><Edit2 className="h-3.5 w-3.5" /></Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => remove.mutate(emp.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  <div className="flex gap-1 shrink-0 flex-wrap justify-end">
+                    {emp.email && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-xs gap-1"
+                        onClick={() => handleInvite(emp)}
+                        disabled={inviting === emp.id}
+                      >
+                        {inviting === emp.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Mail className="h-3 w-3" />}
+                        Invitar
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(emp)}>
+                      <Edit2 className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => remove.mutate(emp.id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
@@ -116,6 +183,9 @@ export default function EmployeeManager({ ownerEmail }) {
                 </Select>
               </div>
             </div>
+            <p className="text-xs text-muted-foreground bg-muted rounded p-2">
+              💡 Después de agregar al empleado, usa el botón "Invitar" para enviarle acceso a la app.
+            </p>
             <div className="flex gap-2 pt-2">
               <Button variant="outline" className="flex-1" onClick={() => setOpen(false)}>Cancelar</Button>
               <Button className="flex-1" onClick={() => save.mutate(form)} disabled={save.isPending || !form.full_name}>

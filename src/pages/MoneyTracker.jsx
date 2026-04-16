@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DollarSign, TrendingUp, TrendingDown, Plus, Trash2, Loader2, Briefcase, BarChart3, Receipt } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, Plus, Trash2, Loader2, Briefcase, BarChart3, Receipt, Users, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
@@ -51,6 +51,21 @@ export default function MoneyTracker() {
       const user = await base44.auth.me();
       return base44.entities.Job.filter({ created_by: user.email }, '-created_date');
     },
+  });
+
+  const { settings } = useBusiness();
+  const ownerEmail = settings.owner_email;
+
+  const { data: employees = [] } = useQuery({
+    queryKey: ['employees', ownerEmail],
+    queryFn: () => base44.entities.Employee.filter({ business_owner_email: ownerEmail }),
+    enabled: !!ownerEmail,
+  });
+
+  const { data: timeEntries = [] } = useQuery({
+    queryKey: ['timeentries-money', ownerEmail],
+    queryFn: () => base44.entities.TimeEntry.filter({ business_owner_email: ownerEmail, status: 'completed' }, '-clock_in', 500),
+    enabled: !!ownerEmail,
   });
 
   const createExpense = useMutation({
@@ -98,6 +113,26 @@ export default function MoneyTracker() {
 
     return { income, totalExpenses, profit, margin, allIncome, allExpenses, byCat, byProject };
   }, [jobs, expenses]);
+
+  // Labor cost this month per employee
+  const laborStats = useMemo(() => {
+    const empMap = {};
+    employees.forEach(emp => {
+      const entries = timeEntries.filter(e => {
+        if (e.employee_id !== emp.id) return false;
+        const d = new Date(e.clock_in);
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      });
+      const totalMins = entries.reduce((s, e) => s + (e.duration_minutes || 0), 0);
+      const hours = totalMins / 60;
+      const cost = hours * (emp.hourly_rate || 0);
+      if (hours > 0 || emp.status === 'active') {
+        empMap[emp.id] = { name: emp.full_name, hours: hours.toFixed(1), cost, hourly_rate: emp.hourly_rate || 0 };
+      }
+    });
+    const totalLaborCost = Object.values(empMap).reduce((s, e) => s + e.cost, 0);
+    return { empMap, totalLaborCost };
+  }, [employees, timeEntries]);
 
   // Last 6 months chart data
   const chartData = useMemo(() => {
@@ -284,6 +319,33 @@ export default function MoneyTracker() {
                 <div key={proj} className="flex justify-between py-2 text-sm">
                   <span className="font-medium">{proj === 'general' ? tr('noProject') : proj}</span>
                   <span className="text-destructive font-semibold">-${amt.toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Payroll / Labor Costs */}
+      {employees.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Users className="h-4 w-4 text-primary" /> Nómina — {new Date().toLocaleDateString('es', { month: 'long' })}
+              <span className="ml-auto text-destructive font-bold text-sm">-${laborStats.totalLaborCost.toFixed(2)}</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="divide-y">
+              {Object.values(laborStats.empMap).map(emp => (
+                <div key={emp.name} className="flex items-center justify-between py-2 text-sm">
+                  <div>
+                    <p className="font-medium">{emp.name}</p>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Clock className="h-3 w-3" />{emp.hours}h · ${emp.hourly_rate}/hr
+                    </p>
+                  </div>
+                  <span className="text-destructive font-semibold">-${emp.cost.toFixed(2)}</span>
                 </div>
               ))}
             </div>

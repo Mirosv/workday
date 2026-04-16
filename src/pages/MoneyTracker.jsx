@@ -17,6 +17,42 @@ const today = new Date().toISOString().split('T')[0];
 const firstOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
 
 const CATEGORIES = ['materials', 'fuel', 'tools', 'labor', 'disposal', 'other'];
+
+// IRS Schedule C Tax Categories
+const TAX_CATEGORIES = [
+  { value: 'none', label: '— No aplica —' },
+  { value: 'advertising', label: 'Advertising' },
+  { value: 'car_truck', label: 'Car & Truck Expenses' },
+  { value: 'commissions', label: 'Commissions & Fees' },
+  { value: 'contract_labor', label: 'Contract Labor' },
+  { value: 'insurance', label: 'Insurance (other than health)' },
+  { value: 'interest_mortgage', label: 'Interest – Mortgage' },
+  { value: 'interest_other', label: 'Interest – Other' },
+  { value: 'legal_professional', label: 'Legal & Professional Services' },
+  { value: 'office_expense', label: 'Office Expense' },
+  { value: 'rent_machinery', label: 'Rent – Machinery/Equipment' },
+  { value: 'rent_property', label: 'Rent – Property' },
+  { value: 'repairs_maintenance', label: 'Repairs & Maintenance' },
+  { value: 'supplies', label: 'Supplies' },
+  { value: 'taxes_licenses', label: 'Taxes & Licenses' },
+  { value: 'travel', label: 'Travel' },
+  { value: 'meals', label: 'Meals (50% deductible)' },
+  { value: 'utilities', label: 'Utilities' },
+  { value: 'wages', label: 'Wages' },
+  { value: 'other_expense', label: 'Other Expense' },
+];
+
+const PAYMENT_METHODS = [
+  { value: 'cash', label: 'Cash' },
+  { value: 'credit_card', label: 'Credit Card' },
+  { value: 'debit_card', label: 'Debit Card' },
+  { value: 'bank_transfer', label: 'Bank Transfer / ACH' },
+  { value: 'check', label: 'Check' },
+  { value: 'zelle', label: 'Zelle' },
+  { value: 'venmo', label: 'Venmo' },
+  { value: 'other', label: 'Other' },
+];
+
 const CAT_COLORS = {
   materials: '#3b82f6',
   fuel: '#f59e0b',
@@ -34,7 +70,7 @@ function inRange(dateStr, from, to) {
 export default function MoneyTracker() {
   const { tr } = useBusiness();
   const queryClient = useQueryClient();
-  const [form, setForm] = useState({ name: '', amount: '', date: today, job_id: '', job_name: '', category: 'other' });
+  const [form, setForm] = useState({ name: '', amount: '', date: today, job_id: '', job_name: '', category: 'other', tax_category: 'none', payment_method: 'other', receipt_ref: '' });
   const [filterProject, setFilterProject] = useState('all');
   const [dateFrom, setDateFrom] = useState(firstOfMonth);
   const [dateTo, setDateTo] = useState(today);
@@ -75,7 +111,7 @@ export default function MoneyTracker() {
     mutationFn: (data) => base44.entities.Expense.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
-      setForm({ name: '', amount: '', date: today, job_id: '', job_name: '', category: 'other' });
+      setForm({ name: '', amount: '', date: today, job_id: '', job_name: '', category: 'other', tax_category: 'none', payment_method: 'other', receipt_ref: '' });
       toast.success(tr('expenseSaved'));
     },
   });
@@ -298,6 +334,37 @@ export default function MoneyTracker() {
               </Select>
             </div>
           </div>
+
+          {/* IRS / Tax fields */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1 border-t">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground flex items-center gap-1">🇺🇸 Tax Category (Schedule C)</Label>
+              <Select value={form.tax_category} onValueChange={v => setForm({ ...form, tax_category: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {TAX_CATEGORIES.map(c => (
+                    <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Payment Method</Label>
+              <Select value={form.payment_method} onValueChange={v => setForm({ ...form, payment_method: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {PAYMENT_METHODS.map(m => (
+                    <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Receipt / Reference #</Label>
+              <Input value={form.receipt_ref} onChange={e => setForm({ ...form, receipt_ref: e.target.value })} placeholder="INV-001, receipt #..." />
+            </div>
+          </div>
+
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
               <Briefcase className="h-3 w-3" /> {tr('linkToProject')}
@@ -467,6 +534,19 @@ export default function MoneyTracker() {
                         )}
                         {exp.category && (
                           <span className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded">{tr(`cat_${exp.category}`)}</span>
+                        )}
+                        {exp.tax_category && exp.tax_category !== 'none' && (
+                          <span className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded">
+                            🇺🇸 {TAX_CATEGORIES.find(t => t.value === exp.tax_category)?.label || exp.tax_category}
+                          </span>
+                        )}
+                        {exp.payment_method && exp.payment_method !== 'other' && (
+                          <span className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
+                            {PAYMENT_METHODS.find(m => m.value === exp.payment_method)?.label || exp.payment_method}
+                          </span>
+                        )}
+                        {exp.receipt_ref && (
+                          <span className="text-xs text-muted-foreground">#{exp.receipt_ref}</span>
                         )}
                       </div>
                     </div>

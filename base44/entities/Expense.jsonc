@@ -32,6 +32,56 @@
         "other"
       ],
       "default": "other"
+    },
+    "tax_category": {
+      "type": "string",
+      "enum": [
+        "advertising",
+        "car_truck",
+        "commissions",
+        "contract_labor",
+        "depletion",
+        "depreciation",
+        "employee_benefits",
+        "insurance",
+        "interest_mortgage",
+        "interest_other",
+        "legal_professional",
+        "office_expense",
+        "pension_profit",
+        "rent_machinery",
+        "rent_property",
+        "repairs_maintenance",
+        "supplies",
+        "taxes_licenses",
+        "travel",
+        "meals",
+        "utilities",
+        "wages",
+        "other_expense",
+        "none"
+      ],
+      "default": "none",
+      "description": "IRS Schedule C (Form 1040) tax category"
+    },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "cash",
+        "credit_card",
+        "debit_card",
+        "bank_transfer",
+        "check",
+        "zelle",
+        "venmo",
+        "other"
+      ],
+      "default": "other"
+    },
+    "receipt_ref": {
+      "type": "string",
+      "default": "",
+      "description": "Receipt number, invoice reference, or note for IRS documentation"
     }
   },
   "required": [

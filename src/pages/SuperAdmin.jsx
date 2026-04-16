@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Textarea } from '@/components/ui/textarea';
 import {
   Loader2, Building2, Phone, MapPin, Globe, Users, ShieldCheck,
-  Edit2, Trash2, PauseCircle, PlayCircle, Crown, Zap, Star, Settings2, KeyRound, Save, Eye, EyeOff
+  Edit2, Trash2, PauseCircle, PlayCircle, Crown, Zap, Star, Settings2, KeyRound, Save, Eye, EyeOff,
+  UserCheck, UserX, Mail, RefreshCw, Search
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -74,20 +75,50 @@ const STATUS_CONFIG = {
 export default function SuperAdmin() {
   const [currentUser, setCurrentUser] = useState(null);
   const [companies, setCompanies] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingCompany, setEditingCompany] = useState(null);
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [userSearch, setUserSearch] = useState('');
+  const [updatingUser, setUpdatingUser] = useState(null);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviting, setInviting] = useState(false);
 
   const load = async () => {
     setLoading(true);
     const user = await base44.auth.me();
     setCurrentUser(user);
     if (user?.email === SUPER_ADMIN_EMAIL) {
-      const list = await base44.entities.BusinessSettings.list('-created_date');
+      const [list, userList] = await Promise.all([
+        base44.entities.BusinessSettings.list('-created_date'),
+        base44.entities.User.list('-created_date', 200),
+      ]);
       setCompanies(list || []);
+      setUsers(userList || []);
     }
     setLoading(false);
+  };
+
+  const handleChangeRole = async (u, newRole) => {
+    setUpdatingUser(u.id);
+    await base44.entities.User.update(u.id, { role: newRole });
+    setUsers(prev => prev.map(x => x.id === u.id ? { ...x, role: newRole } : x));
+    toast.success(`Rol cambiado a "${newRole}" para ${u.full_name || u.email}`);
+    setUpdatingUser(null);
+  };
+
+  const handleInviteUser = async () => {
+    if (!inviteEmail) return;
+    setInviting(true);
+    try {
+      await base44.users.inviteUser(inviteEmail, 'user');
+      toast.success(`Invitación enviada a ${inviteEmail}`);
+      setInviteEmail('');
+    } catch (e) {
+      toast.error('Error al invitar: ' + (e?.message || 'desconocido'));
+    }
+    setInviting(false);
   };
 
   useEffect(() => { load(); }, []);
@@ -161,8 +192,9 @@ export default function SuperAdmin() {
       </div>
 
       <Tabs defaultValue="companies">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="companies">Empresas ({companies.length})</TabsTrigger>
+          <TabsTrigger value="users"><Users className="h-3.5 w-3.5 mr-1" />Usuarios ({users.length})</TabsTrigger>
           <TabsTrigger value="plans">Planes de Acceso</TabsTrigger>
           <TabsTrigger value="stripe">⚙️ Stripe Config</TabsTrigger>
         </TabsList>
@@ -239,6 +271,82 @@ export default function SuperAdmin() {
               </Card>
             );
           })}
+        </TabsContent>
+
+        {/* USERS TAB */}
+        <TabsContent value="users" className="space-y-4 mt-4">
+          {/* Invite */}
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-sm font-medium mb-3 flex items-center gap-2"><Mail className="h-4 w-4 text-primary" />Invitar nuevo usuario</p>
+              <div className="flex gap-2">
+                <Input
+                  type="email"
+                  placeholder="email@ejemplo.com"
+                  value={inviteEmail}
+                  onChange={e => setInviteEmail(e.target.value)}
+                  className="flex-1"
+                />
+                <Button onClick={handleInviteUser} disabled={inviting || !inviteEmail}>
+                  {inviting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4 mr-1" />}
+                  Invitar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nombre o email..."
+              value={userSearch}
+              onChange={e => setUserSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+
+          {/* User list */}
+          <div className="space-y-2">
+            {users
+              .filter(u => {
+                const q = userSearch.toLowerCase();
+                return !q || (u.full_name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q);
+              })
+              .map(u => (
+                <Card key={u.id}>
+                  <CardContent className="p-4 flex items-center gap-3 flex-wrap">
+                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
+                      {(u.full_name || u.email || '?')[0].toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{u.full_name || '—'}</p>
+                      <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                      <p className="text-xs text-muted-foreground">Registrado: {u.created_date ? new Date(u.created_date).toLocaleDateString() : '—'}</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge variant={u.role === 'admin' ? 'default' : 'secondary'} className="text-xs">
+                        {u.role === 'admin' ? '🛡 Admin' : '👤 User'}
+                      </Badge>
+                      {updatingUser === u.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      ) : u.role === 'admin' ? (
+                        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleChangeRole(u, 'user')}>
+                          <UserX className="h-3 w-3 mr-1" /> Quitar Admin
+                        </Button>
+                      ) : (
+                        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleChangeRole(u, 'admin')}>
+                          <UserCheck className="h-3 w-3 mr-1" /> Hacer Admin
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            {users.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-10">No hay usuarios registrados.</p>
+            )}
+          </div>
         </TabsContent>
 
         {/* PLANS TAB */}

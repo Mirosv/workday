@@ -28,49 +28,38 @@ export function BusinessProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
-    base44.auth.me().then(async user => {
+    const load = async () => {
+      const user = await base44.auth.me();
       setCurrentUser(user);
 
       const isSuperAdmin = user.email === SUPER_ADMIN_EMAIL;
-      const isAdmin = user.role === 'admin' && !isSuperAdmin;
-      const isEmployee = user.role !== 'admin'; // role: 'user'
 
-      if (isSuperAdmin) {
-        // Super admin: no business settings needed, just finish loading
-        setLoading(false);
-        return;
-      }
+      if (isSuperAdmin) return; // no business settings needed
 
-      if (isAdmin) {
+      if (user.role === 'admin') {
         // Admin (business owner): load their own settings
-        const list = await base44.entities.BusinessSettings.filter({ created_by: user.email });
-        if (list && list.length > 0) {
-          const s = list[0];
-          setSettings({ ...DEFAULT_SETTINGS, ...s });
-          setSettingsId(s.id);
+        const list = await base44.entities.BusinessSettings.list();
+        const own = list?.find(s => s.created_by === user.email || s.owner_email === user.email);
+        if (own) {
+          setSettings({ ...DEFAULT_SETTINGS, ...own });
+          setSettingsId(own.id);
         }
-        setLoading(false);
-        return;
-      }
-
-      if (isEmployee) {
-        // Employee: find which business they belong to, load that admin's settings
-        const empList = await base44.entities.Employee.filter({ email: user.email, status: 'active' });
+      } else {
+        // Employee: find which business they belong to
+        const empList = await base44.entities.Employee.filter({ email: user.email });
         if (empList && empList.length > 0) {
           const ownerEmail = empList[0].business_owner_email;
-          const list = await base44.entities.BusinessSettings.filter({ created_by: ownerEmail });
-          if (list && list.length > 0) {
-            const s = list[0];
-            setSettings({ ...DEFAULT_SETTINGS, ...s });
-            setSettingsId(s.id);
+          const list = await base44.entities.BusinessSettings.list();
+          const own = list?.find(s => s.created_by === ownerEmail || s.owner_email === ownerEmail);
+          if (own) {
+            setSettings({ ...DEFAULT_SETTINGS, ...own });
+            setSettingsId(own.id);
           }
         }
-        setLoading(false);
-        return;
       }
+    };
 
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    load().catch(console.error).finally(() => setLoading(false));
   }, []);
 
   const saveSettings = async (newSettings) => {

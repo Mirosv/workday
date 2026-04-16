@@ -13,11 +13,12 @@ export default function AppLayout() {
   const { settings, tr } = useBusiness();
 
   const [currentUserRole, setCurrentUserRole] = useState('');
+  const [roleLoaded, setRoleLoaded] = useState(false);
 
-  // Derived role levels
+  // Derived role levels — only valid after roleLoaded
   const isSuperAdmin = currentUserEmail === SUPER_ADMIN_EMAIL;
   const isAdmin = currentUserRole === 'admin' && !isSuperAdmin;
-  const isEmployee = currentUserRole !== 'admin'; // role: 'user'
+  const isEmployee = roleLoaded && currentUserRole !== 'admin';
 
   const allNavItems = [
     { path: '/quotes', label: tr('quoteBuilder'), icon: FileText, adminOnly: true },
@@ -33,8 +34,8 @@ export default function AppLayout() {
     { path: '/settings', label: tr('settings'), icon: Settings, adminOnly: true },
   ];
 
-  // Super admin and admin see all nav; employees only see TimeTrack
-  const navItems = (isSuperAdmin || isAdmin)
+  // Show all nav until role loads; then filter for employees
+  const navItems = (!roleLoaded || isSuperAdmin || isAdmin)
     ? allNavItems
     : allNavItems.filter(item => !item.adminOnly);
 
@@ -42,6 +43,7 @@ export default function AppLayout() {
     base44.auth.me().then(u => {
       setCurrentUserEmail(u?.email || '');
       setCurrentUserRole(u?.role || '');
+      setRoleLoaded(true);
     });
   }, []);
 

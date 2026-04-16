@@ -16,29 +16,39 @@ export default function ClockShark() {
   const { settings } = useBusiness();
   const [currentUser, setCurrentUser] = useState(null);
   const [myEmployee, setMyEmployee] = useState(null);
+  const [resolvedOwnerEmail, setResolvedOwnerEmail] = useState(null);
 
   useEffect(() => {
-    base44.auth.me().then(u => {
+    base44.auth.me().then(async u => {
       setCurrentUser(u);
+      if (u?.role === 'admin') {
+        // Admin: ownerEmail is their own email (or from settings)
+        setResolvedOwnerEmail(settings.owner_email || u.email);
+      } else {
+        // Employee: find which business they belong to by looking up their email
+        const results = await base44.entities.Employee.filter({ email: u.email, status: 'active' });
+        if (results && results.length > 0) {
+          setMyEmployee(results[0]);
+          setResolvedOwnerEmail(results[0].business_owner_email);
+        }
+      }
     });
   }, []);
 
-  // Use settings.owner_email if available, otherwise fall back to current admin's email
-  const ownerEmail = settings.owner_email || (currentUser?.role === 'admin' ? currentUser?.email : null);
-
-  // Check if current user is an employee of this business
+  // For admins, also find their own employee record if it exists
   useEffect(() => {
-    if (!currentUser || !ownerEmail) return;
-    base44.entities.Employee.filter({ business_owner_email: ownerEmail, email: currentUser.email })
+    if (!currentUser || currentUser.role !== 'admin' || !resolvedOwnerEmail || myEmployee) return;
+    base44.entities.Employee.filter({ business_owner_email: resolvedOwnerEmail, email: currentUser.email })
       .then(results => {
         if (results && results.length > 0) setMyEmployee(results[0]);
       });
-  }, [currentUser, ownerEmail]);
+  }, [currentUser, resolvedOwnerEmail]);
 
+  const ownerEmail = resolvedOwnerEmail;
   const isAdmin = currentUser?.role === 'admin';
   const isEmployee = myEmployee && myEmployee.status === 'active';
 
-  if (!currentUser) return (
+  if (!currentUser || (currentUser && !isAdmin && resolvedOwnerEmail === null)) return (
     <div className="flex items-center justify-center h-64">
       <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
     </div>

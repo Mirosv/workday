@@ -61,8 +61,10 @@ export default function AppLayout() {
       )}>
         <div className="p-6 border-b border-sidebar-border">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-sidebar-primary/20 flex items-center justify-center">
-              <TreePine className="h-5 w-5 text-sidebar-primary" />
+            <div className="h-10 w-10 rounded-xl bg-sidebar-primary/20 flex items-center justify-center overflow-hidden shrink-0">
+              {settings.logo_url
+                ? <img src={settings.logo_url} alt="Logo" className="h-full w-full object-contain" />
+                : <TreePine className="h-5 w-5 text-sidebar-primary" />}
             </div>
             <div>
               <h1 className="font-heading font-bold text-sidebar-foreground text-lg leading-tight">{settings.business_name}</h1>

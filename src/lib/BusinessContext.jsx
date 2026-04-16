@@ -22,14 +22,28 @@ export function BusinessProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
-    base44.auth.me().then(user => {
+    base44.auth.me().then(async user => {
       setCurrentUser(user);
-      return base44.entities.BusinessSettings.filter({ created_by: user.email });
-    }).then(list => {
-      if (list && list.length > 0) {
-        const s = list[0];
-        setSettings({ ...DEFAULT_SETTINGS, ...s });
-        setSettingsId(s.id);
+      // Admin: load their own settings
+      if (user.role === 'admin') {
+        const list = await base44.entities.BusinessSettings.filter({ created_by: user.email });
+        if (list && list.length > 0) {
+          const s = list[0];
+          setSettings({ ...DEFAULT_SETTINGS, ...s });
+          setSettingsId(s.id);
+        }
+      } else {
+        // Employee: find which business they belong to, then load that admin's settings
+        const empList = await base44.entities.Employee.filter({ email: user.email, status: 'active' });
+        if (empList && empList.length > 0) {
+          const ownerEmail = empList[0].business_owner_email;
+          const list = await base44.entities.BusinessSettings.filter({ created_by: ownerEmail });
+          if (list && list.length > 0) {
+            const s = list[0];
+            setSettings({ ...DEFAULT_SETTINGS, ...s });
+            setSettingsId(s.id);
+          }
+        }
       }
       setLoading(false);
     }).catch(() => setLoading(false));

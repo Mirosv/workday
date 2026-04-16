@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { FileText, Calculator, Briefcase, DollarSign, Menu, X, TreePine, Settings, CalendarDays, LogOut, Receipt, ShieldCheck, Clock, Car } from 'lucide-react';
+import { FileText, Calculator, Briefcase, DollarSign, Menu, X, TreePine, Settings, CalendarDays, LogOut, Receipt, ShieldCheck, Clock, Car, Landmark } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useBusiness } from '@/lib/BusinessContext';
@@ -25,6 +25,7 @@ export default function AppLayout() {
     { path: '/booking', label: tr('booking'), icon: CalendarDays, adminOnly: true },
     { path: '/clockshark', label: 'TimeTrack', icon: Clock, adminOnly: false },
     { path: '/mileage', label: 'Mileage Log', icon: Car, adminOnly: true },
+    { path: '/owner-transactions', label: 'Owner Transactions', icon: Landmark, adminOnly: true },
     { path: '/settings', label: tr('settings'), icon: Settings, adminOnly: true },
   ];
 

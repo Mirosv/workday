@@ -1,0 +1,80 @@
+{
+  "name": "OwnerTransaction",
+  "type": "object",
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "transaction_type": {
+      "type": "string",
+      "enum": [
+        "owner_contribution",
+        "owner_distribution",
+        "owner_loan_to_business",
+        "owner_loan_from_business",
+        "owner_payment_personal",
+        "owner_reimbursement",
+        "related_party_sale",
+        "related_party_purchase",
+        "other"
+      ],
+      "default": "owner_contribution",
+      "description": "Type of reportable transaction for Form 5472"
+    },
+    "amount": {
+      "type": "number",
+      "default": 0
+    },
+    "description": {
+      "type": "string"
+    },
+    "counterparty_name": {
+      "type": "string",
+      "default": "",
+      "description": "Name of the related party (owner, shareholder, foreign parent, etc.)"
+    },
+    "counterparty_country": {
+      "type": "string",
+      "default": "US",
+      "description": "Country of the related party"
+    },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "cash",
+        "bank_transfer",
+        "check",
+        "zelle",
+        "venmo",
+        "credit_card",
+        "other"
+      ],
+      "default": "bank_transfer"
+    },
+    "reference_number": {
+      "type": "string",
+      "default": "",
+      "description": "Check #, wire reference, transaction ID"
+    },
+    "account": {
+      "type": "string",
+      "default": "",
+      "description": "Bank account or account name"
+    },
+    "tax_year": {
+      "type": "number",
+      "default": 2025
+    },
+    "notes": {
+      "type": "string",
+      "default": ""
+    }
+  },
+  "required": [
+    "date",
+    "transaction_type",
+    "amount",
+    "description"
+  ]
+}

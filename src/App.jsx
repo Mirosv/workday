@@ -18,6 +18,7 @@ import { BusinessProvider } from '@/lib/BusinessContext';
 import SuperAdmin from '@/pages/SuperAdmin';
 import ClockShark from '@/pages/ClockShark';
 import MileageLog from '@/pages/MileageLog';
+import OwnerTransactions from '@/pages/OwnerTransactions';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -58,6 +59,7 @@ const AuthenticatedApp = () => {
           <Route path="/super-admin" element={<SuperAdmin />} />
           <Route path="/clockshark" element={<ClockShark />} />
           <Route path="/mileage" element={<MileageLog />} />
+          <Route path="/owner-transactions" element={<OwnerTransactions />} />
         </Route>
         <Route path="/booking/public" element={<BookingPublic />} />
         <Route path="*" element={<PageNotFound />} />

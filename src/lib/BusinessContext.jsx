@@ -37,23 +37,24 @@ export function BusinessProvider({ children }) {
       if (isSuperAdmin) return; // no business settings needed
 
       if (user.role === 'admin') {
-        // Admin (business owner): load their own settings
+        // Admin (business owner): RLS ensures list() only returns their own records
         const list = await base44.entities.BusinessSettings.list();
-        const own = list?.find(s => s.created_by === user.email || s.owner_email === user.email);
-        if (own) {
-          setSettings({ ...DEFAULT_SETTINGS, ...own });
-          setSettingsId(own.id);
+        if (list && list.length > 0) {
+          const s = list[0];
+          setSettings({ ...DEFAULT_SETTINGS, ...s });
+          setSettingsId(s.id);
         }
       } else {
-        // Employee: find which business they belong to
+        // Employee: find which business they belong to via their employee record
         const empList = await base44.entities.Employee.filter({ email: user.email });
         if (empList && empList.length > 0) {
           const ownerEmail = empList[0].business_owner_email;
-          const list = await base44.entities.BusinessSettings.list();
-          const own = list?.find(s => s.created_by === ownerEmail || s.owner_email === ownerEmail);
-          if (own) {
-            setSettings({ ...DEFAULT_SETTINGS, ...own });
-            setSettingsId(own.id);
+          // Use owner_email field to find the right settings record
+          const list = await base44.entities.BusinessSettings.filter({ owner_email: ownerEmail });
+          if (list && list.length > 0) {
+            const s = list[0];
+            setSettings({ ...DEFAULT_SETTINGS, ...s });
+            setSettingsId(s.id);
           }
         }
       }
@@ -63,11 +64,13 @@ export function BusinessProvider({ children }) {
   }, []);
 
   const saveSettings = async (newSettings) => {
+    // Always persist owner_email so employees can look up their admin's settings
+    const payload = { ...newSettings, owner_email: currentUser?.email };
     if (settingsId) {
-      const updated = await base44.entities.BusinessSettings.update(settingsId, newSettings);
+      const updated = await base44.entities.BusinessSettings.update(settingsId, payload);
       setSettings({ ...DEFAULT_SETTINGS, ...updated });
     } else {
-      const created = await base44.entities.BusinessSettings.create(newSettings);
+      const created = await base44.entities.BusinessSettings.create(payload);
       setSettings({ ...DEFAULT_SETTINGS, ...created });
       setSettingsId(created.id);
     }

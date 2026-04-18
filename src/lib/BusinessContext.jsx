@@ -36,26 +36,15 @@ export function BusinessProvider({ children }) {
 
       if (isSuperAdmin) return; // no business settings needed
 
-      if (user.role === 'admin') {
-        // Admin (business owner): RLS ensures list() only returns their own records
-        const list = await base44.entities.BusinessSettings.list();
-        if (list && list.length > 0) {
-          const s = list[0];
-          setSettings({ ...DEFAULT_SETTINGS, ...s });
-          setSettingsId(s.id);
-        }
-      } else {
-        // Employee: find which business they belong to via their employee record
-        const empList = await base44.entities.Employee.filter({ email: user.email });
-        if (empList && empList.length > 0) {
-          const ownerEmail = empList[0].business_owner_email;
-          // Use owner_email field to find the right settings record
-          const list = await base44.entities.BusinessSettings.filter({ owner_email: ownerEmail });
-          if (list && list.length > 0) {
-            const s = list[0];
-            setSettings({ ...DEFAULT_SETTINGS, ...s });
-            setSettingsId(s.id);
-          }
+      // Use backend function (service role) to correctly load settings for both admins and employees
+      const res = await base44.functions.invoke('getBusinessSettings', {});
+      const s = res?.data?.settings;
+      if (s) {
+        setSettings({ ...DEFAULT_SETTINGS, ...s });
+        setSettingsId(s.id);
+        // Backfill owner_email if missing (fixes existing admin records)
+        if (user.role === 'admin' && !s.owner_email) {
+          await base44.entities.BusinessSettings.update(s.id, { owner_email: user.email });
         }
       }
     };

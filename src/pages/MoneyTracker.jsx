@@ -602,10 +602,9 @@ export default function MoneyTracker() {
           </div>
         )}
       </div>
-    </div>
 
-    {/* Edit Expense Modal */}
-    <Dialog open={!!editingExpense} onOpenChange={(open) => !open && setEditingExpense(null)}>
+      {/* Edit Expense Modal */}
+      <Dialog open={!!editingExpense} onOpenChange={(open) => !open && setEditingExpense(null)}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><Pencil className="h-4 w-4" /> Editar Gasto</DialogTitle>
@@ -678,8 +677,9 @@ export default function MoneyTracker() {
       </DialogContent>
     </Dialog>
     </div>
-  );
-}
+    );
+    }
+
 
 function StatCard({ label, value, icon: Icon, positive, highlight, compact }) {
   return (

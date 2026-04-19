@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { FileText, Calculator, Briefcase, DollarSign, Menu, X, TreePine, Settings, CalendarDays, LogOut, Receipt, ShieldCheck, Clock, Car, Landmark, FolderDown } from 'lucide-react';
+import { FileText, Calculator, Briefcase, DollarSign, Menu, X, TreePine, Settings, CalendarDays, LogOut, Receipt, ShieldCheck, Clock, Car, Landmark, FolderDown, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useBusiness, SUPER_ADMIN_EMAIL } from '@/lib/BusinessContext';
@@ -32,6 +32,7 @@ export default function AppLayout() {
     { path: '/owner-transactions', label: 'Owner Transactions', icon: Landmark, adminOnly: true },
     { path: '/tax-export', label: 'Tax Export', icon: FolderDown, adminOnly: true },
     { path: '/settings', label: tr('settings'), icon: Settings, adminOnly: true },
+    { path: '/help', label: 'Ayuda', icon: HelpCircle, adminOnly: false },
   ];
 
   // Show all nav until role loads; then filter for employees

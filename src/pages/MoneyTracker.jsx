@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DollarSign, TrendingUp, TrendingDown, Plus, Trash2, Loader2, Briefcase, BarChart3, Receipt, Users, Clock, CalendarRange } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, Plus, Trash2, Loader2, Briefcase, BarChart3, Receipt, Users, Clock, CalendarRange, Pencil } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -71,6 +72,8 @@ export default function MoneyTracker() {
   const { tr } = useBusiness();
   const queryClient = useQueryClient();
   const [form, setForm] = useState({ name: '', amount: '', date: today, job_id: '', job_name: '', category: 'other', tax_category: 'none', payment_method: 'other', receipt_ref: '' });
+  const [editingExpense, setEditingExpense] = useState(null);
+  const [editForm, setEditForm] = useState({});
   const [filterProject, setFilterProject] = useState('all');
   const [dateFrom, setDateFrom] = useState(firstOfMonth);
   const [dateTo, setDateTo] = useState(today);
@@ -123,6 +126,39 @@ export default function MoneyTracker() {
       toast.success(tr('expenseDeleted'));
     },
   });
+
+  const updateExpense = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Expense.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      setEditingExpense(null);
+      toast.success('Gasto actualizado');
+    },
+  });
+
+  const openEdit = (exp) => {
+    setEditingExpense(exp);
+    setEditForm({
+      name: exp.name || '',
+      amount: exp.amount || 0,
+      date: exp.date || today,
+      job_id: exp.job_id || '',
+      job_name: exp.job_name || '',
+      category: exp.category || 'other',
+      tax_category: exp.tax_category || 'none',
+      payment_method: exp.payment_method || 'other',
+      receipt_ref: exp.receipt_ref || '',
+    });
+  };
+
+  const handleEditJobSelect = (jobId) => {
+    if (jobId === 'general') {
+      setEditForm({ ...editForm, job_id: '', job_name: '' });
+    } else {
+      const job = jobs.find(j => j.id === jobId);
+      setEditForm({ ...editForm, job_id: jobId, job_name: job ? `${job.client_name} — ${job.job_name}` : '' });
+    }
+  };
 
   // Stats calculated over the selected date range
   const stats = useMemo(() => {
@@ -553,6 +589,9 @@ export default function MoneyTracker() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="font-heading font-bold text-base text-destructive">-${(exp.amount || 0).toFixed(2)}</span>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={() => openEdit(exp)}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
                     <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteExpense.mutate(exp.id)}>
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -563,6 +602,81 @@ export default function MoneyTracker() {
           </div>
         )}
       </div>
+    </div>
+
+    {/* Edit Expense Modal */}
+    <Dialog open={!!editingExpense} onOpenChange={(open) => !open && setEditingExpense(null)}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2"><Pencil className="h-4 w-4" /> Editar Gasto</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">{tr('expenseName')}</Label>
+              <Input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">{tr('amount')}</Label>
+              <Input type="number" value={editForm.amount} onChange={e => setEditForm({ ...editForm, amount: parseFloat(e.target.value) || 0 })} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">{tr('date')}</Label>
+              <Input type="date" value={editForm.date} onChange={e => setEditForm({ ...editForm, date: e.target.value })} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">{tr('category')}</Label>
+              <Select value={editForm.category} onValueChange={v => setEditForm({ ...editForm, category: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map(c => <SelectItem key={c} value={c}>{tr(`cat_${c}`)}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 border-t pt-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Tax Category (Schedule C)</Label>
+              <Select value={editForm.tax_category} onValueChange={v => setEditForm({ ...editForm, tax_category: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {TAX_CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Payment Method</Label>
+              <Select value={editForm.payment_method} onValueChange={v => setEditForm({ ...editForm, payment_method: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {PAYMENT_METHODS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Receipt / Reference #</Label>
+            <Input value={editForm.receipt_ref} onChange={e => setEditForm({ ...editForm, receipt_ref: e.target.value })} placeholder="INV-001..." />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground flex items-center gap-1.5"><Briefcase className="h-3 w-3" /> {tr('linkToProject')}</Label>
+            <Select value={editForm.job_id || 'general'} onValueChange={handleEditJobSelect}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="general">{tr('generalExpense')}</SelectItem>
+                {jobs.map(j => <SelectItem key={j.id} value={j.id}>{j.client_name} — {j.job_name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setEditingExpense(null)}>Cancelar</Button>
+            <Button onClick={() => updateExpense.mutate({ id: editingExpense.id, data: editForm })} disabled={updateExpense.isPending || !editForm.name}>
+              {updateExpense.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Guardar cambios'}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
     </div>
   );
 }

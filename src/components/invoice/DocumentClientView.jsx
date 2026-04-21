@@ -46,22 +46,18 @@ export default function DocumentClientView({ data, services, totals, docType = '
             <thead>
               <tr className="border-b text-xs text-muted-foreground">
                 <th className="text-left py-2">Servicio</th>
-                <th className="text-center py-2">Cant.</th>
-                <th className="text-right py-2">Unit $</th>
                 <th className="text-right py-2">Total</th>
               </tr>
             </thead>
             <tbody>
               {services.map((svc, i) => (
                 <tr key={i} className="border-b border-border/50">
-                  <td className="py-2 font-medium">{svc.name} <span className="text-muted-foreground text-xs">({svc.unit})</span></td>
-                  <td className="text-center py-2">{svc.qty}</td>
-                  <td className="text-right py-2">${(svc.unit_price || 0).toFixed(2)}</td>
+                  <td className="py-2 font-medium">{svc.name}</td>
                   <td className="text-right py-2 font-medium">${(svc.line_total || 0).toFixed(2)}</td>
                 </tr>
               ))}
               {services.length === 0 && (
-                <tr><td colSpan={4} className="text-center text-muted-foreground py-4 text-xs">Sin servicios</td></tr>
+                <tr><td colSpan={2} className="text-center text-muted-foreground py-4 text-xs">Sin servicios</td></tr>
               )}
             </tbody>
           </table>
@@ -69,15 +65,10 @@ export default function DocumentClientView({ data, services, totals, docType = '
 
         <Separator />
 
-        {/* Totals */}
+        {/* Total only */}
         <div className="flex justify-end">
-          <div className="w-64 space-y-1 text-sm">
-            <div className="flex justify-between"><span>Subtotal servicios</span><span>${totals.servicesSubtotal.toFixed(2)}</span></div>
-            {totals.labor > 0 && <div className="flex justify-between"><span>Mano de obra</span><span>${totals.labor.toFixed(2)}</span></div>}
-            {totals.overhead > 0 && <div className="flex justify-between"><span>Overhead</span><span>${totals.overhead.toFixed(2)}</span></div>}
-            {totals.profit > 0 && <div className="flex justify-between"><span>Ganancia</span><span>${totals.profit.toFixed(2)}</span></div>}
-            <Separator />
-            <div className="flex justify-between font-heading font-bold text-lg pt-1">
+          <div className="w-64 text-sm">
+            <div className="flex justify-between font-heading font-bold text-lg">
               <span>Total</span>
               <span className="text-primary">${totals.grandTotal.toFixed(2)}</span>
             </div>

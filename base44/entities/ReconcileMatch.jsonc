@@ -1,0 +1,46 @@
+{
+  "name": "ReconcileMatch",
+  "type": "object",
+  "properties": {
+    "owner_email": {
+      "type": "string"
+    },
+    "plaid_transaction_id": {
+      "type": "string"
+    },
+    "plaid_date": {
+      "type": "string"
+    },
+    "plaid_name": {
+      "type": "string"
+    },
+    "plaid_amount": {
+      "type": "number"
+    },
+    "expense_id": {
+      "type": "string",
+      "default": ""
+    },
+    "expense_name": {
+      "type": "string",
+      "default": ""
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "matched",
+        "unmatched",
+        "ignored"
+      ],
+      "default": "unmatched"
+    },
+    "notes": {
+      "type": "string",
+      "default": ""
+    }
+  },
+  "required": [
+    "owner_email",
+    "plaid_transaction_id"
+  ]
+}

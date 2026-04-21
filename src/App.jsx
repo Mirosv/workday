@@ -21,6 +21,7 @@ import MileageLog from '@/pages/MileageLog';
 import OwnerTransactions from '@/pages/OwnerTransactions';
 import TaxExport from '@/pages/TaxExport';
 import Help from '@/pages/Help';
+import Accounting from '@/pages/Accounting';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -64,6 +65,7 @@ const AuthenticatedApp = () => {
           <Route path="/owner-transactions" element={<OwnerTransactions />} />
           <Route path="/tax-export" element={<TaxExport />} />
           <Route path="/help" element={<Help />} />
+          <Route path="/accounting" element={<Accounting />} />
         </Route>
         <Route path="/booking/public" element={<BookingPublic />} />
         <Route path="*" element={<PageNotFound />} />

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { usePlaidLink } from 'react-plaid-link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,30 +10,62 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Landmark, Link, RefreshCw, CheckCircle, XCircle, Loader2, AlertCircle, ArrowLeftRight } from 'lucide-react';
 import { toast } from 'sonner';
-import { useBusiness } from '@/lib/BusinessContext';
 
 const today = new Date().toISOString().split('T')[0];
 const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
+function PlaidConnectButton({ onSuccess }) {
+  const [linkToken, setLinkToken] = useState(null);
+  const [loadingToken, setLoadingToken] = useState(false);
+
+  const fetchToken = useCallback(async () => {
+    setLoadingToken(true);
+    const res = await base44.functions.invoke('plaidCreateLinkToken', {});
+    setLinkToken(res.data?.link_token || null);
+    setLoadingToken(false);
+  }, []);
+
+  const { open, ready } = usePlaidLink({
+    token: linkToken,
+    onSuccess: async (public_token) => {
+      const res = await base44.functions.invoke('plaidExchangeToken', { public_token });
+      if (res.data?.success) {
+        toast.success('¡Banco conectado exitosamente!');
+        onSuccess();
+      } else {
+        toast.error('Error al conectar banco');
+      }
+      setLinkToken(null);
+    },
+    onExit: () => setLinkToken(null),
+  });
+
+  // Auto-open once token is ready
+  useEffect(() => {
+    if (linkToken && ready) open();
+  }, [linkToken, ready, open]);
+
+  return (
+    <Button onClick={fetchToken} disabled={loadingToken}>
+      {loadingToken ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Link className="h-4 w-4 mr-2" />}
+      Conectar Banco
+    </Button>
+  );
+}
+
 export default function Accounting() {
-  const { currentUser } = useBusiness();
   const queryClient = useQueryClient();
   const [bankConnected, setBankConnected] = useState(false);
-  const [loadingLink, setLoadingLink] = useState(false);
   const [loadingTxns, setLoadingTxns] = useState(false);
   const [transactions, setTransactions] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [startDate, setStartDate] = useState(ninetyDaysAgo);
   const [endDate, setEndDate] = useState(today);
 
-  // Check if bank is already connected
   useEffect(() => {
-    base44.auth.me().then(u => {
-      setBankConnected(!!u?.plaid_access_token);
-    });
+    base44.auth.me().then(u => setBankConnected(!!u?.plaid_access_token));
   }, []);
 
-  // Load expenses for matching
   const { data: expenses = [] } = useQuery({
     queryKey: ['expenses-reconcile'],
     queryFn: async () => {
@@ -41,8 +74,7 @@ export default function Accounting() {
     },
   });
 
-  // Load saved reconcile matches
-  const { data: matches = [], refetch: refetchMatches } = useQuery({
+  const { data: matches = [] } = useQuery({
     queryKey: ['reconcile-matches'],
     queryFn: async () => {
       const user = await base44.auth.me();
@@ -51,11 +83,11 @@ export default function Accounting() {
   });
 
   const saveMatch = useMutation({
-    mutationFn: async ({ txnId, expenseId, expenseName, status, notes, date, name, amount }) => {
+    mutationFn: async ({ txnId, expenseId, expenseName, status, date, name, amount }) => {
       const user = await base44.auth.me();
       const existing = matches.find(m => m.plaid_transaction_id === txnId);
       if (existing) {
-        return base44.entities.ReconcileMatch.update(existing.id, { expense_id: expenseId, expense_name: expenseName, status, notes });
+        return base44.entities.ReconcileMatch.update(existing.id, { expense_id: expenseId, expense_name: expenseName, status });
       }
       return base44.entities.ReconcileMatch.create({
         owner_email: user.email,
@@ -66,47 +98,10 @@ export default function Accounting() {
         expense_id: expenseId,
         expense_name: expenseName,
         status,
-        notes,
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['reconcile-matches'] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['reconcile-matches'] }),
   });
-
-  const connectBank = async () => {
-    setLoadingLink(true);
-    const res = await base44.functions.invoke('plaidCreateLinkToken', {});
-    const linkToken = res.data?.link_token;
-    if (!linkToken) {
-      toast.error('Error al crear link token');
-      setLoadingLink(false);
-      return;
-    }
-
-    // Load Plaid Link SDK dynamically
-    const script = document.createElement('script');
-    script.src = 'https://cdn.plaid.com/link/v2/stable/link-initialize.js';
-    script.onload = () => {
-      const handler = window.Plaid.create({
-        token: linkToken,
-        onSuccess: async (public_token) => {
-          const exchRes = await base44.functions.invoke('plaidExchangeToken', { public_token });
-          if (exchRes.data?.success) {
-            setBankConnected(true);
-            toast.success('¡Banco conectado exitosamente!');
-            fetchTransactions();
-          } else {
-            toast.error('Error al conectar banco');
-          }
-        },
-        onExit: () => setLoadingLink(false),
-      });
-      handler.open();
-      setLoadingLink(false);
-    };
-    document.head.appendChild(script);
-  };
 
   const fetchTransactions = useCallback(async () => {
     setLoadingTxns(true);
@@ -124,7 +119,7 @@ export default function Accounting() {
     if (bankConnected) fetchTransactions();
   }, [bankConnected]);
 
-  const getMatchForTxn = (txnId) => matches.find(m => m.plaid_transaction_id === txnId);
+  const getMatch = (txnId) => matches.find(m => m.plaid_transaction_id === txnId);
 
   const statusBadge = (status) => {
     if (status === 'matched') return <Badge className="bg-green-100 text-green-800 border-green-300">✓ Coincide</Badge>;
@@ -132,11 +127,12 @@ export default function Accounting() {
     return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">Pendiente</Badge>;
   };
 
+  const resolvedCount = matches.filter(m => m.status === 'matched' || m.status === 'ignored').length;
   const summary = {
     total: transactions.length,
     matched: matches.filter(m => m.status === 'matched').length,
     ignored: matches.filter(m => m.status === 'ignored').length,
-    pending: transactions.length - matches.filter(m => m.status === 'matched' || m.status === 'ignored').length,
+    pending: Math.max(0, transactions.length - resolvedCount),
   };
 
   return (
@@ -163,23 +159,13 @@ export default function Accounting() {
               </p>
             </div>
           </div>
-          {!bankConnected ? (
-            <Button onClick={connectBank} disabled={loadingLink}>
-              {loadingLink ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Link className="h-4 w-4 mr-2" />}
-              Conectar Banco
-            </Button>
-          ) : (
-            <Button variant="outline" onClick={connectBank} disabled={loadingLink} size="sm">
-              {loadingLink ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Link className="h-4 w-4 mr-2" />}
-              Cambiar cuenta
-            </Button>
-          )}
+          <PlaidConnectButton onSuccess={() => { setBankConnected(true); fetchTransactions(); }} />
         </CardContent>
       </Card>
 
       {bankConnected && (
         <>
-          {/* Date filter + fetch */}
+          {/* Date filter */}
           <Card>
             <CardContent className="p-4 flex flex-wrap items-end gap-3">
               <div className="space-y-1">
@@ -214,7 +200,7 @@ export default function Accounting() {
             ))}
           </div>
 
-          {/* Transactions list */}
+          {/* Transactions */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
@@ -230,7 +216,7 @@ export default function Accounting() {
               ) : (
                 <div className="divide-y">
                   {transactions.map(txn => {
-                    const match = getMatchForTxn(txn.transaction_id);
+                    const match = getMatch(txn.transaction_id);
                     const isDebit = txn.amount > 0;
                     return (
                       <div key={txn.transaction_id} className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
@@ -258,7 +244,6 @@ export default function Accounting() {
                                   expenseId: expId,
                                   expenseName: exp ? `${exp.name} ($${exp.amount})` : '',
                                   status: 'matched',
-                                  notes: '',
                                   date: txn.date,
                                   name: txn.name,
                                   amount: txn.amount,
@@ -279,19 +264,13 @@ export default function Accounting() {
                           )}
                           {match?.status === 'matched' && (
                             <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground"
-                              onClick={() => saveMatch.mutate({
-                                txnId: txn.transaction_id, expenseId: '', expenseName: '',
-                                status: 'unmatched', notes: '', date: txn.date, name: txn.name, amount: txn.amount,
-                              })}>
+                              onClick={() => saveMatch.mutate({ txnId: txn.transaction_id, expenseId: '', expenseName: '', status: 'unmatched', date: txn.date, name: txn.name, amount: txn.amount })}>
                               <XCircle className="h-3.5 w-3.5 mr-1" /> Desligar
                             </Button>
                           )}
                           {match?.status !== 'ignored' && match?.status !== 'matched' && (
                             <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground"
-                              onClick={() => saveMatch.mutate({
-                                txnId: txn.transaction_id, expenseId: '', expenseName: '',
-                                status: 'ignored', notes: '', date: txn.date, name: txn.name, amount: txn.amount,
-                              })}>
+                              onClick={() => saveMatch.mutate({ txnId: txn.transaction_id, expenseId: '', expenseName: '', status: 'ignored', date: txn.date, name: txn.name, amount: txn.amount })}>
                               Ignorar
                             </Button>
                           )}

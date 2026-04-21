@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
       client_id: PLAID_CLIENT_ID,
       secret: PLAID_SECRET,
       client_name: 'FieldPro App',
-      user: { client_user_id: user.email },
+      user: { client_user_id: user.id },
       products: ['transactions'],
       country_codes: ['US'],
       language: 'en',

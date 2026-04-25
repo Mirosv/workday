@@ -14,8 +14,6 @@ import MoneyTracker from '@/pages/MoneyTracker';
 import BusinessSettingsPage from '@/pages/BusinessSettings';
 import { BusinessProvider } from '@/lib/BusinessContext';
 import SuperAdmin from '@/pages/SuperAdmin';
-import OwnerTransactions from '@/pages/OwnerTransactions';
-import TaxExport from '@/pages/TaxExport';
 import Help from '@/pages/Help';
 
 const AuthenticatedApp = () => {
@@ -54,8 +52,6 @@ const AuthenticatedApp = () => {
           <Route path="/money-tracker" element={<MoneyTracker />} />
           <Route path="/settings" element={<BusinessSettingsPage />} />
           <Route path="/super-admin" element={<SuperAdmin />} />
-          <Route path="/owner-transactions" element={<OwnerTransactions />} />
-          <Route path="/tax-export" element={<TaxExport />} />
           <Route path="/help" element={<Help />} />
         </Route>
         <Route path="*" element={<PageNotFound />} />

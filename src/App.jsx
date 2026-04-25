@@ -12,16 +12,11 @@ import MaterialConverter from '@/pages/MaterialConverter';
 import JobTracker from '@/pages/JobTracker';
 import MoneyTracker from '@/pages/MoneyTracker';
 import BusinessSettingsPage from '@/pages/BusinessSettings';
-import BookingAdmin from '@/pages/BookingAdmin';
-import BookingPublic from '@/pages/BookingPublic';
 import { BusinessProvider } from '@/lib/BusinessContext';
 import SuperAdmin from '@/pages/SuperAdmin';
-import ClockShark from '@/pages/ClockShark';
-import MileageLog from '@/pages/MileageLog';
 import OwnerTransactions from '@/pages/OwnerTransactions';
 import TaxExport from '@/pages/TaxExport';
 import Help from '@/pages/Help';
-import Accounting from '@/pages/Accounting';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -58,16 +53,11 @@ const AuthenticatedApp = () => {
           <Route path="/job-tracker" element={<JobTracker />} />
           <Route path="/money-tracker" element={<MoneyTracker />} />
           <Route path="/settings" element={<BusinessSettingsPage />} />
-          <Route path="/booking" element={<BookingAdmin />} />
           <Route path="/super-admin" element={<SuperAdmin />} />
-          <Route path="/clockshark" element={<ClockShark />} />
-          <Route path="/mileage" element={<MileageLog />} />
           <Route path="/owner-transactions" element={<OwnerTransactions />} />
           <Route path="/tax-export" element={<TaxExport />} />
           <Route path="/help" element={<Help />} />
-          <Route path="/accounting" element={<Accounting />} />
         </Route>
-        <Route path="/booking/public" element={<BookingPublic />} />
         <Route path="*" element={<PageNotFound />} />
       </Routes>
     </BusinessProvider>

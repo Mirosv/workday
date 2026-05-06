@@ -105,6 +105,6 @@ services:
     networks: [workday_net]
     depends_on:
       - workday_frontend
-    command: tunnel --no-autoupdate run
+    command: tunnel --no-autoupdate --protocol http2 run
     environment:
       TUNNEL_TOKEN: ${TUNNEL_TOKEN}

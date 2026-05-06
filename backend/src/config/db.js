@@ -3,9 +3,12 @@ import 'dotenv/config';
 
 const { Pool } = pg;
 
+// SSL only when explicitly requested (DATABASE_SSL=true) — not needed for internal Docker networks
+const ssl = process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false;
+
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  ssl,
 });
 
 pool.on('error', (err) => {

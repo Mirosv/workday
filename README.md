@@ -1,39 +1,129 @@
-**Welcome to your Base44 project** 
+# WorkDay
 
-**About**
+Field service management platform — Node/Express + PostgreSQL + React, deployed via Portainer with Cloudflare Tunnel.
 
-View and Edit  your app on [Base44.com](http://Base44.com) 
+---
 
-This project contains everything you need to run your app locally.
+## Stack
 
-**Edit the code in your local development environment**
+| Layer | Technology |
+|---|---|
+| Frontend | React 18, Vite, Tailwind, shadcn/ui |
+| Backend | Node.js, Express, JWT auth |
+| Database | PostgreSQL 16 |
+| Tunnel | Cloudflare Tunnel (cloudflared) |
+| Deploy | Portainer (git-based stack) |
 
-Any change pushed to the repo will also be reflected in the Base44 Builder.
+---
 
-**Prerequisites:** 
+## Cloudflare Tunnel Setup
 
-1. Clone the repository using the project's Git URL 
-2. Navigate to the project directory
-3. Install dependencies: `npm install`
-4. Create an `.env.local` file and set the right environment variables
+No inbound firewall ports are required. Cloudflare Tunnel creates an outbound-only connection from the `cloudflared` container to Cloudflare's edge.
+
+### 1 — Create the tunnel
+
+1. Go to [Cloudflare Zero Trust](https://one.dash.cloudflare.com) → **Networks → Tunnels**
+2. Click **Add a tunnel** → select **Cloudflared**
+3. Name it `workday`
+4. Copy the **tunnel token** shown during setup (starts with `eyJ...`)
+
+### 2 — Configure the public hostname
+
+In the tunnel's **Public Hostname** tab, add one entry:
+
+| Field | Value |
+|---|---|
+| Subdomain | `app` (or your choice) |
+| Domain | your Cloudflare-managed domain |
+| Type | `HTTP` |
+| URL | `workday_frontend:80` |
+
+This routes `https://app.yourdomain.com` → `workday_frontend:80` inside the Docker network.
+The Nginx inside `workday_frontend` already proxies `/api/*` → `workday_api:4000`, so no second entry is needed.
+
+### 3 — Deploy via Portainer
+
+**Portainer → Stacks → Add stack → Repository**
+
+| Field | Value |
+|---|---|
+| Repository URL | `https://github.com/Mirosv/workday` |
+| Reference | `refs/heads/main` |
+| Compose path | `portainer-stack.yml` |
+
+**Environment variables** (Portainer stack → Environment tab):
+
+| Variable | How to generate | Required |
+|---|---|---|
+| `POSTGRES_PASSWORD` | `openssl rand -base64 24` | yes |
+| `JWT_SECRET` | `openssl rand -hex 32` | yes |
+| `SUPER_ADMIN_EMAIL` | your admin email address | yes |
+| `TUNNEL_TOKEN` | token from Cloudflare step 1 | yes |
+| `FRONTEND_URL` | `https://app.yourdomain.com` | yes |
+| `STRIPE_SECRET_KEY` | Stripe dashboard | no |
+| `STRIPE_WEBHOOK_SECRET` | Stripe dashboard | no |
+| `STRIPE_PRICE_PRO` | Stripe price ID | no |
+| `STRIPE_PRICE_PREMIUM` | Stripe price ID | no |
+| `PLAID_CLIENT_ID` | Plaid dashboard | no |
+| `PLAID_SECRET` | Plaid dashboard | no |
+| `PLAID_ENV` | `sandbox` or `production` | no |
+
+Click **Deploy the stack**. Portainer clones the repo, builds the images, and starts all 4 containers.
+
+### 4 — First login
+
+Open `https://app.yourdomain.com/login`, register with `SUPER_ADMIN_EMAIL` — that account is automatically promoted to Super Admin.
+
+---
+
+## Network architecture
 
 ```
-VITE_BASE44_APP_ID=your_app_id
-VITE_BASE44_APP_BASE_URL=your_backend_url
-
-e.g.
-VITE_BASE44_APP_ID=cbef744a8545c389ef439ea6
-VITE_BASE44_APP_BASE_URL=https://my-to-do-list-81bfaad7.base44.app
+Internet
+   │  HTTPS (port 443 — Cloudflare terminates TLS)
+   ▼
+Cloudflare Edge
+   │  Encrypted outbound tunnel (no inbound ports on server)
+   ▼
+workday_cloudflared
+   │  HTTP  workday_frontend:80  (Docker internal)
+   ▼
+workday_frontend  (Nginx — serves React SPA)
+   │  /api/*  proxy_pass
+   ▼
+workday_api:4000  (Express + JWT)
+   │  PGHOST / PGPASSWORD
+   ▼
+workday_db:5432  (PostgreSQL)
 ```
 
-Run the app: `npm run dev`
+All traffic stays on the `workday_net` Docker bridge. Zero host ports exposed.
 
-**Publish your changes**
+---
 
-Open [Base44.com](http://Base44.com) and click on Publish.
+## Local development
 
-**Docs & Support**
+```bash
+# Clone
+git clone https://github.com/Mirosv/workday && cd workday
 
-Documentation: [https://docs.base44.com/Integrations/Using-GitHub](https://docs.base44.com/Integrations/Using-GitHub)
+# Backend
+cp backend/.env.example backend/.env
+# Edit backend/.env — set DATABASE_URL or individual PG* vars
+cd backend && npm install && npm run migrate && npm run dev
 
-Support: [https://app.base44.com/support](https://app.base44.com/support)
+# Frontend (separate terminal)
+cd ..
+cp .env.example .env.local   # VITE_API_URL=http://localhost:4000
+npm install && npm run dev
+```
+
+Vite proxies `/api/*` to `http://localhost:4000` in dev mode automatically.
+
+---
+
+## Updating the app
+
+Push to `main`, then in Portainer:
+
+**Stacks → workday → Pull and redeploy**

@@ -1,25 +1,24 @@
 version: '3.8'
 
-# ── WorkDay — Portainer Stack ──────────────────────────────────────────────────
-# Deploy via Portainer → Stacks → Add Stack → Repository
-# Set environment variables in the Portainer stack editor before deploying.
+# ── WorkDay — Portainer Stack (Cloudflare Tunnel) ─────────────────────────────
+# Deploy: Portainer → Stacks → Add Stack → Repository
 #
-# Required variables (set in Portainer env tab):
-#   POSTGRES_PASSWORD   strong password for the database
-#   JWT_SECRET          long random string (openssl rand -hex 32)
+# Required env vars (Portainer → stack → Environment):
+#   POSTGRES_PASSWORD   openssl rand -base64 24
+#   JWT_SECRET          openssl rand -hex 32
 #   SUPER_ADMIN_EMAIL   your admin email
+#   TUNNEL_TOKEN        Cloudflare Zero Trust → Tunnels → your tunnel → token
 #
 # Optional:
+#   POSTGRES_DB, POSTGRES_USER      (default: workday)
+#   FRONTEND_URL                    your public domain (e.g. https://app.example.com)
 #   STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PRICE_PRO, STRIPE_PRICE_PREMIUM
-#   PLAID_CLIENT_ID, PLAID_SECRET, PLAID_ENV (sandbox|production)
+#   PLAID_CLIENT_ID, PLAID_SECRET, PLAID_ENV
 
 networks:
   workday_net:
     name: workday_net
     driver: bridge
-  npm_proxy:
-    external: true
-    name: npm_default          # Nginx Proxy Manager network
 
 volumes:
   workday_postgres:
@@ -61,7 +60,6 @@ services:
     environment:
       NODE_ENV:              production
       PORT:                  4000
-      # Individual PG vars — no string interpolation, injected directly into container
       PGHOST:                workday_db
       PGPORT:                5432
       PGDATABASE:            ${POSTGRES_DB:-workday}
@@ -70,7 +68,7 @@ services:
       JWT_SECRET:            ${JWT_SECRET}
       JWT_EXPIRES_IN:        ${JWT_EXPIRES_IN:-7d}
       SUPER_ADMIN_EMAIL:     ${SUPER_ADMIN_EMAIL}
-      FRONTEND_URL:          ${FRONTEND_URL:-https://workday.tudominio.com}
+      FRONTEND_URL:          ${FRONTEND_URL:-https://app.example.com}
       STRIPE_SECRET_KEY:     ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
       STRIPE_PRICE_PRO:      ${STRIPE_PRICE_PRO:-}
@@ -93,11 +91,20 @@ services:
     image: workday_frontend:latest
     container_name: workday_frontend
     restart: unless-stopped
-    networks:
-      - workday_net   # reach workday_api internally
-      - npm_proxy     # reachable from Nginx Proxy Manager
+    networks: [workday_net]
     depends_on:
       workday_api:
         condition: service_healthy
-    ports:
-      - "3100:80"   # direct access for testing; remove once NPM is configured
+    # No public ports — Cloudflare Tunnel handles inbound traffic
+
+  # ── Cloudflare Tunnel ────────────────────────────────────────────────────────
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: workday_cloudflared
+    restart: unless-stopped
+    networks: [workday_net]
+    depends_on:
+      - workday_frontend
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN}

@@ -1,13 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/api/client';
 import { t } from '@/lib/i18n';
+import { useAuth } from '@/lib/AuthContext';
 
 const BusinessContext = createContext(null);
 
-// 3 levels:
-// super_admin  → email === SUPER_ADMIN_EMAIL, role: 'admin'  (platform owner)
-// admin        → role: 'admin', normal business owner
-// employee     → role: 'user', works for an admin
 export const SUPER_ADMIN_EMAIL = 'valerio.miros85@gmail.com';
 
 const DEFAULT_SETTINGS = {
@@ -22,44 +19,43 @@ const DEFAULT_SETTINGS = {
 };
 
 export function BusinessProvider({ children }) {
-  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const { user } = useAuth();
+  const [settings, setSettings]   = useState(DEFAULT_SETTINGS);
   const [settingsId, setSettingsId] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading]     = useState(true);
 
   useEffect(() => {
+    if (!user) return;
+    if (user.email === SUPER_ADMIN_EMAIL) { setLoading(false); return; }
+
     const load = async () => {
-      const user = await base44.auth.me();
-      setCurrentUser(user);
-
-      const isSuperAdmin = user.email === SUPER_ADMIN_EMAIL;
-
-      if (isSuperAdmin) return; // no business settings needed
-
-      // Use backend function (service role) to correctly load settings for both admins and employees
-      const res = await base44.functions.invoke('getBusinessSettings', {});
-      const s = res?.data?.settings;
-      if (s) {
-        setSettings({ ...DEFAULT_SETTINGS, ...s });
-        setSettingsId(s.id);
-        // Backfill owner_email if missing (fixes existing admin records)
-        if (user.role === 'admin' && !s.owner_email) {
-          await base44.entities.BusinessSettings.update(s.id, { owner_email: user.email });
+      try {
+        const s = await base44.entities.BusinessSettings.list();
+        // API returns the single record for the current tenant
+        const record = Array.isArray(s) ? s[0] : s;
+        if (record) {
+          setSettings({ ...DEFAULT_SETTINGS, ...record });
+          setSettingsId(record.id);
         }
+      } catch (err) {
+        console.error('Failed to load business settings:', err);
+      } finally {
+        setLoading(false);
       }
     };
 
-    load().catch(console.error).finally(() => setLoading(false));
-  }, []);
+    load();
+  }, [user?.id]);
 
   const saveSettings = async (newSettings) => {
-    // Always persist owner_email so employees can look up their admin's settings
-    const payload = { ...newSettings, owner_email: currentUser?.email };
     if (settingsId) {
-      const updated = await base44.entities.BusinessSettings.update(settingsId, payload);
+      const updated = await base44.entities.BusinessSettings.update(settingsId, newSettings);
       setSettings({ ...DEFAULT_SETTINGS, ...updated });
     } else {
-      const created = await base44.entities.BusinessSettings.create(payload);
+      const created = await base44.entities.BusinessSettings.create({
+        ...newSettings,
+        owner_email: user?.email,
+      });
       setSettings({ ...DEFAULT_SETTINGS, ...created });
       setSettingsId(created.id);
     }
@@ -69,7 +65,7 @@ export function BusinessProvider({ children }) {
   const tr = (key) => t(lang, key);
 
   return (
-    <BusinessContext.Provider value={{ settings, saveSettings, loading, currentUser, lang, tr }}>
+    <BusinessContext.Provider value={{ settings, saveSettings, loading, currentUser: user, lang, tr }}>
       {children}
     </BusinessContext.Provider>
   );

@@ -1,0 +1,98 @@
+version: '3.8'
+
+# ── WorkDay — Portainer Stack ──────────────────────────────────────────────────
+# Deploy via Portainer → Stacks → Add Stack → Repository
+# Set environment variables in the Portainer stack editor before deploying.
+#
+# Required variables (set in Portainer env tab):
+#   POSTGRES_PASSWORD   strong password for the database
+#   JWT_SECRET          long random string (openssl rand -hex 32)
+#   SUPER_ADMIN_EMAIL   your admin email
+#
+# Optional:
+#   STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PRICE_PRO, STRIPE_PRICE_PREMIUM
+#   PLAID_CLIENT_ID, PLAID_SECRET, PLAID_ENV (sandbox|production)
+
+networks:
+  workday_net:
+    name: workday_net
+    driver: bridge
+  npm_proxy:
+    external: true
+    name: npm_default          # Nginx Proxy Manager network
+
+volumes:
+  workday_postgres:
+    name: workday_postgres
+
+services:
+
+  # ── PostgreSQL ───────────────────────────────────────────────────────────────
+  workday_db:
+    image: postgres:16-alpine
+    container_name: workday_db
+    restart: unless-stopped
+    networks: [workday_net]
+    volumes:
+      - workday_postgres:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB:       ${POSTGRES_DB:-workday}
+      POSTGRES_USER:     ${POSTGRES_USER:-workday}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-workday} -d ${POSTGRES_DB:-workday}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ── API (Node / Express) ─────────────────────────────────────────────────────
+  workday_api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: workday_api:latest
+    container_name: workday_api
+    restart: unless-stopped
+    networks: [workday_net]
+    depends_on:
+      workday_db:
+        condition: service_healthy
+    environment:
+      NODE_ENV:              production
+      PORT:                  4000
+      DATABASE_URL:          postgresql://${POSTGRES_USER:-workday}:${POSTGRES_PASSWORD}@workday_db:5432/${POSTGRES_DB:-workday}
+      JWT_SECRET:            ${JWT_SECRET}
+      JWT_EXPIRES_IN:        ${JWT_EXPIRES_IN:-7d}
+      SUPER_ADMIN_EMAIL:     ${SUPER_ADMIN_EMAIL}
+      FRONTEND_URL:          ${FRONTEND_URL:-https://workday.tudominio.com}
+      STRIPE_SECRET_KEY:     ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_PRICE_PRO:      ${STRIPE_PRICE_PRO:-}
+      STRIPE_PRICE_PREMIUM:  ${STRIPE_PRICE_PREMIUM:-}
+      PLAID_CLIENT_ID:       ${PLAID_CLIENT_ID:-}
+      PLAID_SECRET:          ${PLAID_SECRET:-}
+      PLAID_ENV:             ${PLAID_ENV:-sandbox}
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:4000/health').then(r=>process.exit(r.ok?0:1))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ── Frontend (React SPA + Nginx proxy) ───────────────────────────────────────
+  workday_frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: workday_frontend:latest
+    container_name: workday_frontend
+    restart: unless-stopped
+    networks:
+      - workday_net   # reach workday_api internally
+      - npm_proxy     # reachable from Nginx Proxy Manager
+    depends_on:
+      workday_api:
+        condition: service_healthy
+    # No port exposure — Nginx Proxy Manager handles TLS + routing
+    # Add NPM proxy host: workday_frontend:80 → your domain

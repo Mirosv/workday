@@ -15,6 +15,7 @@ import BusinessSettingsPage from '@/pages/BusinessSettings';
 import { BusinessProvider } from '@/lib/BusinessContext';
 import SuperAdmin from '@/pages/SuperAdmin';
 import Help from '@/pages/Help';
+import DataExport from '@/pages/DataExport';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -53,6 +54,7 @@ const AuthenticatedApp = () => {
           <Route path="/settings" element={<BusinessSettingsPage />} />
           <Route path="/super-admin" element={<SuperAdmin />} />
           <Route path="/help" element={<Help />} />
+          <Route path="/export" element={<DataExport />} />
         </Route>
         <Route path="*" element={<PageNotFound />} />
       </Routes>

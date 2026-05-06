@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { FileText, Calculator, Briefcase, DollarSign, Menu, X, TreePine, Settings, LogOut, Receipt, ShieldCheck, HelpCircle } from 'lucide-react';
+import { FileText, Calculator, Briefcase, DollarSign, Menu, X, TreePine, Settings, LogOut, Receipt, ShieldCheck, HelpCircle, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useBusiness, SUPER_ADMIN_EMAIL } from '@/lib/BusinessContext';
@@ -28,6 +28,7 @@ export default function AppLayout() {
     { path: '/money-tracker', label: tr('moneyTracker'), icon: DollarSign, adminOnly: true },
 
     { path: '/settings', label: tr('settings'), icon: Settings, adminOnly: true },
+    { path: '/export', label: 'Exportar Datos', icon: Database, adminOnly: true },
     { path: '/help', label: 'Ayuda', icon: HelpCircle, adminOnly: false },
   ];
 

@@ -31,7 +31,11 @@ services:
     environment:
       NODE_ENV: production
       PORT: 4000
-      DATABASE_URL: postgresql://workday:workday_secret@db:5432/workday
+      PGHOST: db
+      PGPORT: 5432
+      PGDATABASE: workday
+      PGUSER: workday
+      PGPASSWORD: workday_secret
       JWT_SECRET: ${JWT_SECRET:-change_me_in_production}
       JWT_EXPIRES_IN: 7d
       SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL:-valerio.miros85@gmail.com}

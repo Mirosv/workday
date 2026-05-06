@@ -61,7 +61,12 @@ services:
     environment:
       NODE_ENV:              production
       PORT:                  4000
-      DATABASE_URL:          postgresql://${POSTGRES_USER:-workday}:${POSTGRES_PASSWORD}@workday_db:5432/${POSTGRES_DB:-workday}
+      # Individual PG vars — no string interpolation, injected directly into container
+      PGHOST:                workday_db
+      PGPORT:                5432
+      PGDATABASE:            ${POSTGRES_DB:-workday}
+      PGUSER:                ${POSTGRES_USER:-workday}
+      PGPASSWORD:            ${POSTGRES_PASSWORD}
       JWT_SECRET:            ${JWT_SECRET}
       JWT_EXPIRES_IN:        ${JWT_EXPIRES_IN:-7d}
       SUPER_ADMIN_EMAIL:     ${SUPER_ADMIN_EMAIL}

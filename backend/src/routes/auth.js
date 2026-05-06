@@ -39,8 +39,8 @@ router.post('/register', async (req, res) => {
 
     const user = rows[0];
 
-    // Create default business settings for new admins
-    if (role === 'admin') {
+    // Create default business settings for admin and super_admin
+    if (role === 'admin' || role === 'super_admin') {
       await query(
         `INSERT INTO business_settings (owner_id, owner_email, business_name)
          VALUES ($1, $2, $3)`,

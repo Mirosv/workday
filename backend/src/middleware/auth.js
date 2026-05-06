@@ -20,22 +20,22 @@ export async function authenticate(req, res, next) {
 
   req.user = rows[0];
 
-  // Attach business_id for non-super-admin users
-  if (req.user.role !== 'super_admin') {
-    if (req.user.role === 'admin') {
-      const { rows: bs } = await query(
-        'SELECT id FROM business_settings WHERE owner_id = $1 LIMIT 1',
-        [req.user.id]
-      );
-      req.user.business_id = bs[0]?.id ?? null;
-    } else {
-      // Employee: find their employee record to get business_id
-      const { rows: emp } = await query(
-        'SELECT business_id FROM employees WHERE user_id = $1 AND status = $2 LIMIT 1',
-        [req.user.id, 'active']
-      );
-      req.user.business_id = emp[0]?.business_id ?? null;
-    }
+  // Resolve business_id for every role.
+  // super_admin operates their own business just like admin;
+  // they additionally have access to platform-wide endpoints.
+  if (req.user.role === 'admin' || req.user.role === 'super_admin') {
+    const { rows: bs } = await query(
+      'SELECT id FROM business_settings WHERE owner_id = $1 LIMIT 1',
+      [req.user.id]
+    );
+    req.user.business_id = bs[0]?.id ?? null;
+  } else {
+    // Employee: find their employee record to get business_id
+    const { rows: emp } = await query(
+      'SELECT business_id FROM employees WHERE user_id = $1 AND status = $2 LIMIT 1',
+      [req.user.id, 'active']
+    );
+    req.user.business_id = emp[0]?.business_id ?? null;
   }
 
   next();

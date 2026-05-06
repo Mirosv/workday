@@ -94,5 +94,5 @@ services:
     depends_on:
       workday_api:
         condition: service_healthy
-    # No port exposure — Nginx Proxy Manager handles TLS + routing
-    # Add NPM proxy host: workday_frontend:80 → your domain
+    ports:
+      - "3100:80"   # direct access for testing; remove once NPM is configured

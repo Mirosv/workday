@@ -43,6 +43,7 @@ export default function JobModal({ job, open, onClose }) {
       toast.success('Guardado');
       onClose();
     },
+    onError: (err) => toast.error(err.message || 'Error al guardar'),
   });
 
   const deleteJob = useMutation({
@@ -52,6 +53,7 @@ export default function JobModal({ job, open, onClose }) {
       toast.success('Job eliminado');
       onClose();
     },
+    onError: (err) => toast.error(err.message || 'Error al eliminar'),
   });
 
   // Load jobs for same client (scoped to current user)

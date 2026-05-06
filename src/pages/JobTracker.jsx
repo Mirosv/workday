@@ -44,6 +44,7 @@ export default function JobTracker() {
   const updateStatus = useMutation({
     mutationFn: ({ id, status }) => base44.entities.Job.update(id, { status }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['jobs'] }),
+    onError: (err) => toast.error(err.message || 'Error al actualizar estado'),
   });
 
   const filtered = useMemo(() => {

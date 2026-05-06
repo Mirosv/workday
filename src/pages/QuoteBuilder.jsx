@@ -123,6 +123,7 @@ export default function QuoteBuilder() {
       if (!linkedJobId) setLinkedJobId(result.id);
       toast.success(linkedJobId ? 'Quote actualizado en CRM!' : 'Quote guardado en CRM!');
     },
+    onError: (err) => toast.error(err.message || 'Error al guardar el quote'),
   });
 
   const handleDuplicate = () => {

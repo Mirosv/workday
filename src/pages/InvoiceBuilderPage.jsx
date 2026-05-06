@@ -129,6 +129,7 @@ export default function InvoiceBuilderPage() {
       setJobStatus(markPaid ? 'paid' : 'in_progress');
       toast.success(markPaid ? '✅ Marcado como PAGADO!' : 'Invoice guardado en CRM!');
     },
+    onError: (err) => toast.error(err.message || 'Error al guardar el invoice'),
   });
 
   const handleMarkPaid = () => saveInvoice.mutate(true);

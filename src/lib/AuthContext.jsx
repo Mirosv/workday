@@ -15,26 +15,17 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuth = async () => {
     setIsLoadingAuth(true);
-    setAuthError(null);
     try {
-      const isAuth = await base44.auth.isAuthenticated();
-      if (!isAuth) {
-        setIsAuthenticated(false);
-        setIsLoadingAuth(false);
-        base44.auth.redirectToLogin(window.location.pathname);
-        return;
-      }
       const currentUser = await base44.auth.me();
       setUser(currentUser);
       setIsAuthenticated(true);
     } catch (err) {
-      if (err?.message?.includes('not registered') || err?.status === 403) {
-        setAuthError({ type: 'user_not_registered', message: err.message });
+      const msg = err?.message || '';
+      if (msg.toLowerCase().includes('not registered')) {
+        setAuthError({ type: 'user_not_registered', message: msg });
       } else {
-        // Not authenticated — redirect to Base44 login
-        base44.auth.redirectToLogin(window.location.pathname);
+        setIsAuthenticated(false);
       }
-      setIsAuthenticated(false);
     } finally {
       setIsLoadingAuth(false);
     }

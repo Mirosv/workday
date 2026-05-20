@@ -12,6 +12,7 @@ import MoneyTracker from '@/pages/MoneyTracker';
 import BusinessSettingsPage from '@/pages/BusinessSettings';
 import { BusinessProvider } from '@/lib/BusinessContext';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import { base44 } from '@/api/base44Client';
 import SuperAdmin from '@/pages/SuperAdmin';
 import Help from '@/pages/Help';
 import DataExport from '@/pages/DataExport';
@@ -33,11 +34,8 @@ const AuthenticatedApp = () => {
   }
 
   if (!isAuthenticated) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-background">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-primary rounded-full animate-spin" />
-      </div>
-    );
+    base44.auth.redirectToLogin();
+    return null;
   }
 
   return (

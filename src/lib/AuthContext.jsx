@@ -4,10 +4,10 @@ import { base44 } from '@/api/base44Client';
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser]                     = useState(null);
+  const [user, setUser]                       = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoadingAuth, setIsLoadingAuth]   = useState(true);
-  const [authError, setAuthError]           = useState(null);
+  const [isLoadingAuth, setIsLoadingAuth]     = useState(true);
+  const [authError, setAuthError]             = useState(null);
 
   useEffect(() => {
     checkAuth();
@@ -21,25 +21,27 @@ export const AuthProvider = ({ children }) => {
       if (!isAuth) {
         setIsAuthenticated(false);
         setIsLoadingAuth(false);
+        base44.auth.redirectToLogin(window.location.pathname);
         return;
       }
       const currentUser = await base44.auth.me();
       setUser(currentUser);
       setIsAuthenticated(true);
     } catch (err) {
+      if (err?.message?.includes('not registered') || err?.status === 403) {
+        setAuthError({ type: 'user_not_registered', message: err.message });
+      } else {
+        // Not authenticated — redirect to Base44 login
+        base44.auth.redirectToLogin(window.location.pathname);
+      }
       setIsAuthenticated(false);
-      setAuthError({ type: 'auth_required', message: err.message });
     } finally {
       setIsLoadingAuth(false);
     }
   };
 
   const logout = () => {
-    base44.auth.logout('/login');
-  };
-
-  const navigateToLogin = () => {
-    base44.auth.redirectToLogin(window.location.pathname);
+    base44.auth.logout();
   };
 
   return (
@@ -47,11 +49,8 @@ export const AuthProvider = ({ children }) => {
       user,
       isAuthenticated,
       isLoadingAuth,
-      isLoadingPublicSettings: false,
       authError,
-      appPublicSettings: null,
       logout,
-      navigateToLogin,
       checkAppState: checkAuth,
     }}>
       {children}

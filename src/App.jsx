@@ -2,9 +2,7 @@ import { Toaster } from "@/components/ui/sonner"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
 import PageNotFound from './lib/PageNotFound';
-import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import AppLayout from '@/components/layout/AppLayout';
 import QuoteBuilder from '@/pages/QuoteBuilder';
 import InvoiceBuilderPage from '@/pages/InvoiceBuilderPage';
@@ -13,26 +11,31 @@ import JobTracker from '@/pages/JobTracker';
 import MoneyTracker from '@/pages/MoneyTracker';
 import BusinessSettingsPage from '@/pages/BusinessSettings';
 import { BusinessProvider } from '@/lib/BusinessContext';
+import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import SuperAdmin from '@/pages/SuperAdmin';
 import Help from '@/pages/Help';
 import DataExport from '@/pages/DataExport';
+import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isAuthenticated } = useAuth();
+  const { isLoadingAuth, isAuthenticated, authError } = useAuth();
 
   if (isLoadingAuth) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" />
+      <div className="fixed inset-0 flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-4 border-slate-200 border-t-primary rounded-full animate-spin" />
       </div>
     );
   }
 
+  if (authError?.type === 'user_not_registered') {
+    return <UserNotRegisteredError />;
+  }
+
   if (!isAuthenticated) {
-    base44.auth.redirectToLogin(window.location.pathname);
     return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" />
+      <div className="fixed inset-0 flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-4 border-slate-200 border-t-primary rounded-full animate-spin" />
       </div>
     );
   }

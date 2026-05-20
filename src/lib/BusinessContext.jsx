@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { base44 } from '@/api/client';
+import { base44 } from '@/api/base44Client';
 import { t } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 

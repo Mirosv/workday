@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { base44, tokenStore } from '@/api/client';
+import { base44 } from '@/api/base44Client';
 
 const AuthContext = createContext();
 
@@ -11,33 +11,22 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     checkAuth();
-
-    // Listen for 401 responses dispatched by the API client
-    const onUnauth = () => {
-      setUser(null);
-      setIsAuthenticated(false);
-      setAuthError({ type: 'auth_required', message: 'Session expired' });
-    };
-    window.addEventListener('wd:unauthenticated', onUnauth);
-    return () => window.removeEventListener('wd:unauthenticated', onUnauth);
   }, []);
 
   const checkAuth = async () => {
     setIsLoadingAuth(true);
     setAuthError(null);
-
-    if (!tokenStore.get()) {
-      setIsAuthenticated(false);
-      setIsLoadingAuth(false);
-      return;
-    }
-
     try {
+      const isAuth = await base44.auth.isAuthenticated();
+      if (!isAuth) {
+        setIsAuthenticated(false);
+        setIsLoadingAuth(false);
+        return;
+      }
       const currentUser = await base44.auth.me();
       setUser(currentUser);
       setIsAuthenticated(true);
     } catch (err) {
-      tokenStore.remove();
       setIsAuthenticated(false);
       setAuthError({ type: 'auth_required', message: err.message });
     } finally {
@@ -45,42 +34,22 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = async (email, password) => {
-    const u = await base44.auth.login(email, password);
-    setUser(u);
-    setIsAuthenticated(true);
-    setAuthError(null);
-    return u;
-  };
-
-  const register = async (email, password, full_name) => {
-    const u = await base44.auth.register(email, password, full_name);
-    setUser(u);
-    setIsAuthenticated(true);
-    setAuthError(null);
-    return u;
-  };
-
   const logout = () => {
-    tokenStore.remove();
-    setUser(null);
-    setIsAuthenticated(false);
-    window.location.href = '/login';
+    base44.auth.logout('/login');
   };
 
-  // Kept for compat with existing pages that call navigateToLogin
-  const navigateToLogin = () => { window.location.href = '/login'; };
+  const navigateToLogin = () => {
+    base44.auth.redirectToLogin(window.location.pathname);
+  };
 
   return (
     <AuthContext.Provider value={{
       user,
       isAuthenticated,
       isLoadingAuth,
-      isLoadingPublicSettings: false, // no longer needed
+      isLoadingPublicSettings: false,
       authError,
-      appPublicSettings: null,        // no longer needed
-      login,
-      register,
+      appPublicSettings: null,
       logout,
       navigateToLogin,
       checkAppState: checkAuth,

@@ -30,8 +30,7 @@ export function BusinessProvider({ children }) {
 
     const load = async () => {
       try {
-        const s = await base44.entities.BusinessSettings.list();
-        // API returns the single record for the current tenant
+        const s = await base44.entities.BusinessSettings.filter({ owner_email: user.email });
         const record = Array.isArray(s) ? s[0] : s;
         if (record) {
           setSettings({ ...DEFAULT_SETTINGS, ...record });
